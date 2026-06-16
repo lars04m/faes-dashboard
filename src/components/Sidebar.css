@@ -81,6 +81,20 @@
   transition: all 0.15s ease;
   border: 1px solid transparent;
   font-size: 0.925rem;
+  text-decoration: none;
+}
+
+.sidebar-badge {
+  margin-left: auto;
+  min-width: 1.25rem;
+  padding: 0.1rem 0.4rem;
+  border-radius: 999px;
+  background-color: var(--brand-orange);
+  color: white;
+  font-size: 0.7rem;
+  font-weight: 700;
+  line-height: 1.2;
+  text-align: center;
 }
 
 .sidebar-item:hover {

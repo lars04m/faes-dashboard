@@ -1,35 +1,37 @@
-import { useState } from 'react';
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { Sidebar } from './components/Sidebar';
 import { BugReports } from './components/BugReports';
-import { Versions } from './components/Versions';
+import { Versions, VersionsProvider } from './versions';
 import { InstructionBuilder } from './components/InstructionBuilder';
 import { Settings } from './components/Settings';
 
 function App() {
-  const [activeTab, setActiveTab] = useState('bug-reports');
-
-  const renderContent = () => {
-    switch (activeTab) {
-      case 'bug-reports':
-        return <BugReports />;
-      case 'versions':
-        return <Versions />;
-      case 'all-instructions':
-        return <InstructionBuilder />;
-      case 'settings':
-        return <Settings />;
-      default:
-        return <BugReports />;
-    }
-  };
-
   return (
-    <>
-      <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
-      <main style={{ marginLeft: 'var(--sidebar-width)', flex: 1, minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-        {renderContent()}
-      </main>
-    </>
+    <BrowserRouter>
+      <VersionsProvider>
+        <Sidebar />
+        <main
+          style={{
+            marginLeft: 'var(--sidebar-width)',
+            flex: 1,
+            minHeight: '100vh',
+            display: 'flex',
+            flexDirection: 'column',
+          }}
+        >
+          <Routes>
+            <Route path="/" element={<Navigate to="/bug-reports" replace />} />
+            <Route path="/bug-reports" element={<BugReports />} />
+            <Route path="/versions/*" element={<Versions />} />
+            <Route path="/all-instructions/:instructionId/:entryId" element={<InstructionBuilder />} />
+            <Route path="/all-instructions/:instructionId" element={<InstructionBuilder />} />
+            <Route path="/all-instructions" element={<InstructionBuilder />} />
+            <Route path="/settings" element={<Settings />} />
+            <Route path="*" element={<Navigate to="/bug-reports" replace />} />
+          </Routes>
+        </main>
+      </VersionsProvider>
+    </BrowserRouter>
   );
 }
 

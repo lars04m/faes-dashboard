@@ -1,50 +1,54 @@
 import React from 'react';
+import { NavLink } from 'react-router-dom';
 import { Bug, FileText, Layers, Settings as SettingsIcon, LogOut } from 'lucide-react';
 import faesLogo from '../assets/faes-logo.png';
+import { useVersionsContext } from '../versions/VersionsContext';
+import { appRoutes } from '../versions/routes';
 import './Sidebar.css';
 
-interface SidebarProps {
-  activeTab: string;
-  setActiveTab: (tab: string) => void;
-}
+export const Sidebar: React.FC = () => {
+  const { pendingReviewCount } = useVersionsContext();
 
-export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
   const menuSections = [
     {
       title: 'Overview',
       items: [
         {
-          id: 'bug-reports',
+          id: appRoutes.bugReports,
           label: 'Bug reports',
-          icon: Bug
-        }
-      ]
+          icon: Bug,
+          badge: 0,
+        },
+      ],
     },
     {
       title: 'Instructions',
       items: [
         {
-          id: 'all-instructions',
+          id: appRoutes.builder,
           label: 'All Instructions',
-          icon: FileText
+          icon: FileText,
+          badge: 0,
         },
         {
-          id: 'versions',
+          id: appRoutes.versions,
           label: 'Versions',
-          icon: Layers
-        }
-      ]
+          icon: Layers,
+          badge: pendingReviewCount,
+        },
+      ],
     },
     {
       title: 'Settings',
       items: [
         {
-          id: 'settings',
+          id: appRoutes.settings,
           label: 'Settings',
-          icon: SettingsIcon
-        }
-      ]
-    }
+          icon: SettingsIcon,
+          badge: 0,
+        },
+      ],
+    },
   ];
 
   return (
@@ -64,16 +68,23 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
               <div className="sidebar-section-header">{section.title}</div>
               {section.items.map((item) => {
                 const Icon = item.icon;
-                const isActive = activeTab === item.id;
                 return (
-                  <div
+                  <NavLink
                     key={item.id}
-                    className={`sidebar-item ${isActive ? 'active' : ''}`}
-                    onClick={() => setActiveTab(item.id)}
+                    to={item.id}
+                    className={({ isActive }) =>
+                      `sidebar-item${isActive ? ' active' : ''}`
+                    }
+                    end={item.id === appRoutes.versions ? false : undefined}
                   >
                     <Icon className="sidebar-item-icon" />
                     <span>{item.label}</span>
-                  </div>
+                    {item.badge > 0 && (
+                      <span className="sidebar-badge" aria-label={`${item.badge} pending reviews`}>
+                        {item.badge}
+                      </span>
+                    )}
+                  </NavLink>
                 );
               })}
             </div>
@@ -82,7 +93,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
       </div>
 
       <div className="sidebar-footer">
-        <div className="sidebar-item logout-btn" onClick={() => alert('Logged out successfully (Mock)')}>
+        <div
+          className="sidebar-item logout-btn"
+          onClick={() => alert('Logged out successfully (Mock)')}
+        >
           <LogOut className="sidebar-item-icon" />
           <span>Log out</span>
         </div>
