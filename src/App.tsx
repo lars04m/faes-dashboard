@@ -13,7 +13,7 @@ function App() {
       case 'bug-reports':
         return <BugReports />;
       case 'versions':
-        return <Versions />;
+        return <Versions onNavigateToBuilder={() => setActiveTab('all-instructions')} />;
       case 'all-instructions':
         return <InstructionBuilder />;
       case 'settings':

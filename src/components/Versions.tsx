@@ -9,6 +9,7 @@ import {
   FileText,
   CheckCircle2,
   Archive,
+  X,
 } from 'lucide-react';
 import stepVisualImage from '../assets/image-1.png';
 import './Versions.css';
@@ -77,6 +78,37 @@ interface PublishData {
   previewSteps: PreviewStep[];
   operatorsOnShift: OperatorOnShift[];
 }
+
+interface RejectionFeedback {
+  reviewerName: string;
+  reviewerInitials: string;
+  date: string;
+  role: string;
+  tags: string[];
+  feedback: string;
+}
+
+interface RejectionData {
+  author: string;
+  version: string;
+  date: string;
+  comment: string;
+  previewSteps: PreviewStep[];
+  rejectionFeedback: RejectionFeedback;
+}
+
+interface RejectionSubmission {
+  reasons: string[];
+  additionalDetails: string;
+  notifyAuthor: boolean;
+}
+
+const REJECTION_REASON_OPTIONS = [
+  'Technically incorrect',
+  'Incomplete',
+  'Unclear',
+  'Other',
+] as const;
 
 const STATUS_ORDER: InstructionStatus[] = ['live', 'review', 'draft'];
 
@@ -342,6 +374,26 @@ const DEFAULT_PUBLISH_DATA: PublishData = {
   operatorsOnShift: DEFAULT_OPERATORS_ON_SHIFT,
 };
 
+const DEFAULT_REJECTION_FEEDBACK: RejectionFeedback = {
+  reviewerName: 'Stefan Witlox',
+  reviewerInitials: 'SW',
+  date: 'June 4th',
+  role: 'Reviewer',
+  tags: ['Technically incorrect', 'Incomplete'],
+  feedback:
+    'Step 4 needs a clear next step, other wise they\'ll improvise. Also rephrase the language...',
+};
+
+const DEFAULT_REJECTION_DATA: RejectionData = {
+  author: 'Jane Larsen',
+  version: 'v3.3',
+  date: 'June 1st',
+  comment:
+    'I added visuals for step 4 and replaced the text with more active wording.',
+  previewSteps: DEFAULT_PREVIEW_STEPS,
+  rejectionFeedback: DEFAULT_REJECTION_FEEDBACK,
+};
+
 const REVIEW_DATA_BY_ENTRY: Record<string, ReviewData> = {
   'v-1-draft': DEFAULT_REVIEW_DATA,
   'v-4-draft': {
@@ -380,6 +432,15 @@ function getPublishData(entry: VersionEntry): PublishData {
       date: entry.updatedAt,
     }
   );
+}
+
+function getRejectionData(entry: VersionEntry): RejectionData {
+  return {
+    ...DEFAULT_REJECTION_DATA,
+    author: entry.author,
+    version: entry.version,
+    date: entry.updatedAt,
+  };
 }
 
 const LIST_SECTION_ICONS: Record<InstructionStatus, React.ElementType> = {
@@ -986,12 +1047,186 @@ const OperatorImpactSection: React.FC<OperatorImpactSectionProps> = ({ operators
   );
 };
 
+interface RejectionFeedbackSectionProps {
+  feedback: RejectionFeedback;
+}
+
+const RejectionFeedbackSection: React.FC<RejectionFeedbackSectionProps> = ({
+  feedback,
+}) => (
+  <section className="rejection-feedback-card glass-card">
+    <header className="review-section-header">
+      <span>REJECTION FEEDBACK</span>
+    </header>
+
+    <div className="rejection-reviewer">
+      <span className="rejection-reviewer-avatar">{feedback.reviewerInitials}</span>
+      <div>
+        <p className="rejection-reviewer-name">{feedback.reviewerName}</p>
+        <p className="rejection-reviewer-meta">
+          {feedback.date} &bull; {feedback.role}
+        </p>
+      </div>
+    </div>
+
+    <div className="rejection-tags">
+      {feedback.tags.map((tag) => (
+        <span key={tag} className="rejection-tag">
+          {tag}
+        </span>
+      ))}
+    </div>
+
+    <textarea
+      className="rejection-feedback-text"
+      readOnly
+      value={feedback.feedback}
+      aria-label="Rejection feedback"
+    />
+  </section>
+);
+
+interface RejectModalProps {
+  version: string;
+  authorName: string;
+  onClose: () => void;
+  onSubmit: (submission: RejectionSubmission) => void;
+}
+
+const RejectModal: React.FC<RejectModalProps> = ({
+  version,
+  authorName,
+  onClose,
+  onSubmit,
+}) => {
+  const [selectedReasons, setSelectedReasons] = useState<string[]>([]);
+  const [additionalDetails, setAdditionalDetails] = useState('');
+  const [notifyAuthor, setNotifyAuthor] = useState(true);
+
+  const authorFirstName = authorName.split(' ')[0] ?? authorName;
+
+  const toggleReason = (reason: string) => {
+    setSelectedReasons((prev) =>
+      prev.includes(reason)
+        ? prev.filter((item) => item !== reason)
+        : [...prev, reason],
+    );
+  };
+
+  const isSubmitEnabled =
+    selectedReasons.length > 0 && additionalDetails.trim().length > 0;
+
+  const handleSubmit = () => {
+    if (!isSubmitEnabled) return;
+
+    onSubmit({
+      reasons: selectedReasons,
+      additionalDetails: additionalDetails.trim(),
+      notifyAuthor,
+    });
+  };
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div
+        className="modal-content reject-modal"
+        onClick={(event) => event.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="reject-modal-title"
+      >
+        <header className="modal-header">
+          <h2 id="reject-modal-title" className="modal-title">
+            Reject {version}?
+          </h2>
+          <button type="button" className="modal-close" onClick={onClose} aria-label="Close">
+            <X size={18} />
+          </button>
+        </header>
+
+        <div className="modal-body reject-modal-body">
+          <p className="reject-modal-subtitle">
+            The author will be notified and your feedback will be attached to this version
+          </p>
+
+          <div className="reject-modal-field">
+            <label className="reject-modal-label">Reason</label>
+            <div className="reject-reason-chips">
+              {REJECTION_REASON_OPTIONS.map((reason) => {
+                const isSelected = selectedReasons.includes(reason);
+
+                return (
+                  <button
+                    key={reason}
+                    type="button"
+                    className={`reject-reason-chip${isSelected ? ' selected' : ''}`}
+                    onClick={() => toggleReason(reason)}
+                    aria-pressed={isSelected}
+                  >
+                    {reason}
+                    {isSelected && <X size={12} aria-hidden="true" />}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="reject-modal-field">
+            <label className="reject-modal-label" htmlFor="reject-additional-details">
+              Additional details
+            </label>
+            <textarea
+              id="reject-additional-details"
+              className="reject-modal-textarea"
+              placeholder="I added visuals for step 4 and replaced the text with more active wording."
+              value={additionalDetails}
+              onChange={(event) => setAdditionalDetails(event.target.value)}
+            />
+          </div>
+
+          <div className="reject-notify-panel">
+            <div className="reject-notify-copy">
+              <p className="reject-notify-title">Notify {authorFirstName} directly</p>
+              <p className="reject-notify-subtitle">Send rejection feedback to author</p>
+            </div>
+            <button
+              type="button"
+              className={`publish-toggle${notifyAuthor ? ' active' : ''}`}
+              role="switch"
+              aria-checked={notifyAuthor}
+              aria-label={`Notify ${authorFirstName} directly`}
+              onClick={() => setNotifyAuthor((prev) => !prev)}
+            >
+              <span className="publish-toggle-thumb" />
+            </button>
+          </div>
+        </div>
+
+        <footer className="modal-footer reject-modal-footer">
+          <button type="button" className="reject-modal-btn reject-modal-btn-cancel" onClick={onClose}>
+            Cancel
+          </button>
+          <button
+            type="button"
+            className="reject-modal-btn reject-modal-btn-submit"
+            disabled={!isSubmitEnabled}
+            onClick={handleSubmit}
+          >
+            Send rejection
+          </button>
+        </footer>
+      </div>
+    </div>
+  );
+};
+
 interface ReviewViewProps {
   entry: VersionEntry;
   onBack: () => void;
+  onOpenRejectModal: () => void;
 }
 
-const ReviewView: React.FC<ReviewViewProps> = ({ entry, onBack }) => {
+const ReviewView: React.FC<ReviewViewProps> = ({ entry, onBack, onOpenRejectModal }) => {
   const reviewData = getReviewData(entry);
   const [checkedItems, setCheckedItems] = useState<Record<number, boolean>>({});
 
@@ -1055,7 +1290,11 @@ const ReviewView: React.FC<ReviewViewProps> = ({ entry, onBack }) => {
       </div>
 
       <div className="review-actions">
-        <button type="button" className="review-btn review-btn-reject">
+        <button
+          type="button"
+          className="review-btn review-btn-reject"
+          onClick={onOpenRejectModal}
+        >
           Reject
         </button>
         <button
@@ -1073,9 +1312,10 @@ const ReviewView: React.FC<ReviewViewProps> = ({ entry, onBack }) => {
 interface PublishViewProps {
   entry: VersionEntry;
   onBack: () => void;
+  onOpenRejectModal: () => void;
 }
 
-const PublishView: React.FC<PublishViewProps> = ({ entry, onBack }) => {
+const PublishView: React.FC<PublishViewProps> = ({ entry, onBack, onOpenRejectModal }) => {
   const publishData = getPublishData(entry);
 
   return (
@@ -1109,11 +1349,79 @@ const PublishView: React.FC<PublishViewProps> = ({ entry, onBack }) => {
       </div>
 
       <div className="review-actions">
-        <button type="button" className="review-btn review-btn-reject">
-          Cancel
+        <button
+          type="button"
+          className="review-btn review-btn-reject"
+          onClick={onOpenRejectModal}
+        >
+          Reject
         </button>
         <button type="button" className="review-btn review-btn-approve">
           Publish {publishData.version}
+        </button>
+      </div>
+    </div>
+  );
+};
+
+interface RejectionViewProps {
+  entry: VersionEntry;
+  submission: RejectionSubmission;
+  onBack: () => void;
+  onViewHistory: () => void;
+  onGoToBuilder: () => void;
+}
+
+const RejectionView: React.FC<RejectionViewProps> = ({
+  entry,
+  submission,
+  onBack,
+  onViewHistory,
+  onGoToBuilder,
+}) => {
+  const rejectionData = getRejectionData(entry);
+  const rejectionFeedback: RejectionFeedback = {
+    ...rejectionData.rejectionFeedback,
+    tags: submission.reasons,
+    feedback: submission.additionalDetails,
+  };
+
+  return (
+    <div className="review-page">
+      <header className="review-header">
+        <div className="review-header-left">
+          <button type="button" className="version-back-btn" onClick={onBack}>
+            <ChevronLeft size={16} aria-hidden="true" />
+            Version History
+          </button>
+          <p className="version-history-breadcrumb">
+            /{rejectionData.version} - Rejection
+          </p>
+        </div>
+        <span className="instruction-badge rejection-status-badge">Rejected</span>
+      </header>
+
+      <div className="review-layout">
+        <PreviewPanel previewSteps={rejectionData.previewSteps} />
+
+        <aside className="review-sidebar">
+          <VersionDetailsCard
+            author={rejectionData.author}
+            version={rejectionData.version}
+            date={rejectionData.date}
+            comment={rejectionData.comment}
+          />
+
+          <RejectionFeedbackSection feedback={rejectionFeedback} />
+        </aside>
+      </div>
+
+      <div className="rejection-actions">
+        <button type="button" className="rejection-btn rejection-btn-secondary" onClick={onViewHistory}>
+          View history
+        </button>
+        <button type="button" className="rejection-btn rejection-btn-primary" onClick={onGoToBuilder}>
+          Go to builder
         </button>
       </div>
     </div>
@@ -1124,7 +1432,11 @@ function findVersionEntry(instructionId: string, entryId: string): VersionEntry 
   return getVersionHistory(instructionId).entries.find((entry) => entry.id === entryId);
 }
 
-export const Versions: React.FC = () => {
+export interface VersionsProps {
+  onNavigateToBuilder?: () => void;
+}
+
+export const Versions: React.FC<VersionsProps> = ({ onNavigateToBuilder }) => {
   const [selectedInstructionId, setSelectedInstructionId] = useState<string | null>(
     null,
   );
@@ -1132,6 +1444,13 @@ export const Versions: React.FC = () => {
     null,
   );
   const [selectedPublishEntryId, setSelectedPublishEntryId] = useState<string | null>(
+    null,
+  );
+  const [selectedRejectionEntryId, setSelectedRejectionEntryId] = useState<string | null>(
+    null,
+  );
+  const [rejectModalEntryId, setRejectModalEntryId] = useState<string | null>(null);
+  const [rejectionSubmission, setRejectionSubmission] = useState<RejectionSubmission | null>(
     null,
   );
 
@@ -1150,14 +1469,28 @@ export const Versions: React.FC = () => {
     return findVersionEntry(selectedInstructionId, selectedPublishEntryId);
   }, [selectedInstructionId, selectedPublishEntryId]);
 
+  const selectedRejectionEntry = useMemo(() => {
+    if (!selectedInstructionId || !selectedRejectionEntryId) return undefined;
+    return findVersionEntry(selectedInstructionId, selectedRejectionEntryId);
+  }, [selectedInstructionId, selectedRejectionEntryId]);
+
+  const rejectModalEntry = useMemo(() => {
+    if (!selectedInstructionId || !rejectModalEntryId) return undefined;
+    return findVersionEntry(selectedInstructionId, rejectModalEntryId);
+  }, [selectedInstructionId, rejectModalEntryId]);
+
   const isWorkflowView = Boolean(
-    selectedInstruction && (selectedReviewEntry || selectedPublishEntry),
+    selectedInstruction &&
+      (selectedReviewEntry || selectedPublishEntry || selectedRejectionEntry),
   );
 
   const handleBackFromHistory = () => {
     setSelectedInstructionId(null);
     setSelectedReviewEntryId(null);
     setSelectedPublishEntryId(null);
+    setSelectedRejectionEntryId(null);
+    setRejectModalEntryId(null);
+    setRejectionSubmission(null);
   };
 
   const handleBackFromReview = () => {
@@ -1168,14 +1501,80 @@ export const Versions: React.FC = () => {
     setSelectedPublishEntryId(null);
   };
 
+  const handleBackFromRejection = () => {
+    setSelectedRejectionEntryId(null);
+    setRejectionSubmission(null);
+  };
+
+  const handleOpenRejectModal = (entryId: string) => {
+    setRejectModalEntryId(entryId);
+  };
+
+  const handleCloseRejectModal = () => {
+    setRejectModalEntryId(null);
+  };
+
+  const handleSendRejection = (submission: RejectionSubmission) => {
+    if (!rejectModalEntryId) return;
+
+    setRejectionSubmission(submission);
+    setSelectedRejectionEntryId(rejectModalEntryId);
+    setRejectModalEntryId(null);
+    setSelectedReviewEntryId(null);
+    setSelectedPublishEntryId(null);
+  };
+
+  const handleViewHistoryFromRejection = () => {
+    setSelectedRejectionEntryId(null);
+    setRejectionSubmission(null);
+    setSelectedReviewEntryId(null);
+    setSelectedPublishEntryId(null);
+  };
+
   return (
     <div
       className={`dashboard-container${isWorkflowView ? ' dashboard-container--review' : ''}`}
     >
-      {selectedInstruction && selectedPublishEntry ? (
-        <PublishView entry={selectedPublishEntry} onBack={handleBackFromPublish} />
+      {selectedInstruction && selectedRejectionEntry && rejectionSubmission ? (
+        <RejectionView
+          entry={selectedRejectionEntry}
+          submission={rejectionSubmission}
+          onBack={handleBackFromRejection}
+          onViewHistory={handleViewHistoryFromRejection}
+          onGoToBuilder={() => onNavigateToBuilder?.()}
+        />
+      ) : selectedInstruction && selectedPublishEntry ? (
+        <>
+          <PublishView
+            entry={selectedPublishEntry}
+            onBack={handleBackFromPublish}
+            onOpenRejectModal={() => handleOpenRejectModal(selectedPublishEntry.id)}
+          />
+          {rejectModalEntry && (
+            <RejectModal
+              version={rejectModalEntry.version}
+              authorName={rejectModalEntry.author}
+              onClose={handleCloseRejectModal}
+              onSubmit={handleSendRejection}
+            />
+          )}
+        </>
       ) : selectedInstruction && selectedReviewEntry ? (
-        <ReviewView entry={selectedReviewEntry} onBack={handleBackFromReview} />
+        <>
+          <ReviewView
+            entry={selectedReviewEntry}
+            onBack={handleBackFromReview}
+            onOpenRejectModal={() => handleOpenRejectModal(selectedReviewEntry.id)}
+          />
+          {rejectModalEntry && (
+            <RejectModal
+              version={rejectModalEntry.version}
+              authorName={rejectModalEntry.author}
+              onClose={handleCloseRejectModal}
+              onSubmit={handleSendRejection}
+            />
+          )}
+        </>
       ) : selectedInstruction ? (
         <VersionHistoryView
           instruction={selectedInstruction}
