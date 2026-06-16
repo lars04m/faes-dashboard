@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Search,
   ChevronRight,
@@ -10,6 +10,7 @@ import {
   CheckCircle2,
   Archive,
   X,
+  CircleCheck,
 } from 'lucide-react';
 import stepVisualImage from '../assets/image-1.png';
 import './Versions.css';
@@ -118,6 +119,41 @@ const REJECTION_REASON_OPTIONS = [
   'Unclear',
   'Other',
 ] as const;
+
+type ActionToastVariant = 'success' | 'danger';
+
+interface ActionToastState {
+  message: string;
+  variant: ActionToastVariant;
+}
+
+interface ActionToastProps {
+  toast: ActionToastState;
+  onDismiss: () => void;
+}
+
+const ActionToast: React.FC<ActionToastProps> = ({ toast, onDismiss }) => {
+  const Icon = toast.variant === 'success' ? CircleCheck : MessageCircle;
+
+  return (
+    <div
+      className={`action-toast action-toast--${toast.variant}`}
+      role="status"
+      aria-live="polite"
+    >
+      <Icon className="action-toast-icon" size={18} aria-hidden="true" />
+      <p className="action-toast-message">{toast.message}</p>
+      <button
+        type="button"
+        className="action-toast-dismiss"
+        onClick={onDismiss}
+        aria-label="Dismiss notification"
+      >
+        <X size={16} />
+      </button>
+    </div>
+  );
+};
 
 const STATUS_ORDER: InstructionStatus[] = ['live', 'review', 'draft'];
 
@@ -1358,9 +1394,15 @@ interface ReviewViewProps {
   entry: VersionEntry;
   onBack: () => void;
   onOpenRejectModal: () => void;
+  onApprove: () => void;
 }
 
-const ReviewView: React.FC<ReviewViewProps> = ({ entry, onBack, onOpenRejectModal }) => {
+const ReviewView: React.FC<ReviewViewProps> = ({
+  entry,
+  onBack,
+  onOpenRejectModal,
+  onApprove,
+}) => {
   const reviewData = getReviewData(entry);
   const [checkedItems, setCheckedItems] = useState<Record<number, boolean>>({});
 
@@ -1435,6 +1477,7 @@ const ReviewView: React.FC<ReviewViewProps> = ({ entry, onBack, onOpenRejectModa
           type="button"
           className="review-btn review-btn-approve"
           disabled={!isApproveEnabled}
+          onClick={onApprove}
         >
           Approve {reviewData.version}
         </button>
@@ -1447,12 +1490,23 @@ interface PublishViewProps {
   entry: VersionEntry;
   onBack: () => void;
   onOpenRejectModal: () => void;
+  onPublishConfirm: () => void;
 }
 
-const PublishView: React.FC<PublishViewProps> = ({ entry, onBack, onOpenRejectModal }) => {
+const PublishView: React.FC<PublishViewProps> = ({
+  entry,
+  onBack,
+  onOpenRejectModal,
+  onPublishConfirm,
+}) => {
   const publishData = getPublishData(entry);
   const publishConfirmDetails = getPublishConfirmDetails(entry, publishData);
   const [isPublishModalOpen, setIsPublishModalOpen] = useState(false);
+
+  const handlePublishConfirm = () => {
+    setIsPublishModalOpen(false);
+    onPublishConfirm();
+  };
 
   return (
     <div className="review-page">
@@ -1505,7 +1559,7 @@ const PublishView: React.FC<PublishViewProps> = ({ entry, onBack, onOpenRejectMo
         <PublishConfirmModal
           details={publishConfirmDetails}
           onClose={() => setIsPublishModalOpen(false)}
-          onConfirm={() => setIsPublishModalOpen(false)}
+          onConfirm={handlePublishConfirm}
         />
       )}
     </div>
@@ -1601,6 +1655,28 @@ export const Versions: React.FC<VersionsProps> = ({ onNavigateToBuilder }) => {
   const [rejectionSubmission, setRejectionSubmission] = useState<RejectionSubmission | null>(
     null,
   );
+  const [actionToast, setActionToast] = useState<ActionToastState | null>(null);
+
+  const showActionToast = useCallback(
+    (message: string, variant: ActionToastVariant = 'success') => {
+      setActionToast({ message, variant });
+    },
+    [],
+  );
+
+  const dismissActionToast = useCallback(() => {
+    setActionToast(null);
+  }, []);
+
+  useEffect(() => {
+    if (!actionToast) return;
+
+    const timer = window.setTimeout(() => {
+      setActionToast(null);
+    }, 4500);
+
+    return () => window.clearTimeout(timer);
+  }, [actionToast]);
 
   const selectedInstruction = useMemo(
     () => INSTRUCTIONS.find((instruction) => instruction.id === selectedInstructionId),
@@ -1663,13 +1739,33 @@ export const Versions: React.FC<VersionsProps> = ({ onNavigateToBuilder }) => {
   };
 
   const handleSendRejection = (submission: RejectionSubmission) => {
-    if (!rejectModalEntryId) return;
+    if (!rejectModalEntryId || !rejectModalEntry) return;
 
     setRejectionSubmission(submission);
     setSelectedRejectionEntryId(rejectModalEntryId);
     setRejectModalEntryId(null);
     setSelectedReviewEntryId(null);
     setSelectedPublishEntryId(null);
+    showActionToast(
+      `Rejection sent for ${rejectModalEntry.version}. The author has been notified.`,
+      'danger',
+    );
+  };
+
+  const handlePublishConfirm = () => {
+    if (!selectedPublishEntry) return;
+
+    const { version } = selectedPublishEntry;
+    setSelectedPublishEntryId(null);
+    showActionToast(`${version} is now live and replaced the previous version.`);
+  };
+
+  const handleApproveReview = () => {
+    if (!selectedReviewEntry) return;
+
+    const { version } = selectedReviewEntry;
+    setSelectedReviewEntryId(null);
+    showActionToast(`${version} approved and is ready to publish.`);
   };
 
   const handleViewHistoryFromRejection = () => {
@@ -1680,59 +1776,67 @@ export const Versions: React.FC<VersionsProps> = ({ onNavigateToBuilder }) => {
   };
 
   return (
-    <div
-      className={`dashboard-container${isWorkflowView ? ' dashboard-container--review' : ''}`}
-    >
-      {selectedInstruction && selectedRejectionEntry && rejectionSubmission ? (
-        <RejectionView
-          entry={selectedRejectionEntry}
-          submission={rejectionSubmission}
-          onBack={handleBackFromRejection}
-          onViewHistory={handleViewHistoryFromRejection}
-          onGoToBuilder={() => onNavigateToBuilder?.()}
-        />
-      ) : selectedInstruction && selectedPublishEntry ? (
-        <>
-          <PublishView
-            entry={selectedPublishEntry}
-            onBack={handleBackFromPublish}
-            onOpenRejectModal={() => handleOpenRejectModal(selectedPublishEntry.id)}
+    <>
+      <div
+        className={`dashboard-container${isWorkflowView ? ' dashboard-container--review' : ''}`}
+      >
+        {selectedInstruction && selectedRejectionEntry && rejectionSubmission ? (
+          <RejectionView
+            entry={selectedRejectionEntry}
+            submission={rejectionSubmission}
+            onBack={handleBackFromRejection}
+            onViewHistory={handleViewHistoryFromRejection}
+            onGoToBuilder={() => onNavigateToBuilder?.()}
           />
-          {rejectModalEntry && (
-            <RejectModal
-              version={rejectModalEntry.version}
-              authorName={rejectModalEntry.author}
-              onClose={handleCloseRejectModal}
-              onSubmit={handleSendRejection}
+        ) : selectedInstruction && selectedPublishEntry ? (
+          <>
+            <PublishView
+              entry={selectedPublishEntry}
+              onBack={handleBackFromPublish}
+              onOpenRejectModal={() => handleOpenRejectModal(selectedPublishEntry.id)}
+              onPublishConfirm={handlePublishConfirm}
             />
-          )}
-        </>
-      ) : selectedInstruction && selectedReviewEntry ? (
-        <>
-          <ReviewView
-            entry={selectedReviewEntry}
-            onBack={handleBackFromReview}
-            onOpenRejectModal={() => handleOpenRejectModal(selectedReviewEntry.id)}
+            {rejectModalEntry && (
+              <RejectModal
+                version={rejectModalEntry.version}
+                authorName={rejectModalEntry.author}
+                onClose={handleCloseRejectModal}
+                onSubmit={handleSendRejection}
+              />
+            )}
+          </>
+        ) : selectedInstruction && selectedReviewEntry ? (
+          <>
+            <ReviewView
+              entry={selectedReviewEntry}
+              onBack={handleBackFromReview}
+              onOpenRejectModal={() => handleOpenRejectModal(selectedReviewEntry.id)}
+              onApprove={handleApproveReview}
+            />
+            {rejectModalEntry && (
+              <RejectModal
+                version={rejectModalEntry.version}
+                authorName={rejectModalEntry.author}
+                onClose={handleCloseRejectModal}
+                onSubmit={handleSendRejection}
+              />
+            )}
+          </>
+        ) : selectedInstruction ? (
+          <VersionHistoryView
+            instruction={selectedInstruction}
+            onBack={handleBackFromHistory}
+            onReview={setSelectedReviewEntryId}
+            onPublish={setSelectedPublishEntryId}
           />
-          {rejectModalEntry && (
-            <RejectModal
-              version={rejectModalEntry.version}
-              authorName={rejectModalEntry.author}
-              onClose={handleCloseRejectModal}
-              onSubmit={handleSendRejection}
-            />
-          )}
-        </>
-      ) : selectedInstruction ? (
-        <VersionHistoryView
-          instruction={selectedInstruction}
-          onBack={handleBackFromHistory}
-          onReview={setSelectedReviewEntryId}
-          onPublish={setSelectedPublishEntryId}
-        />
-      ) : (
-        <InstructionListView onSelectInstruction={setSelectedInstructionId} />
+        ) : (
+          <InstructionListView onSelectInstruction={setSelectedInstructionId} />
+        )}
+      </div>
+
+      {actionToast && (
+        <ActionToast toast={actionToast} onDismiss={dismissActionToast} />
       )}
-    </div>
+    </>
   );
 };
