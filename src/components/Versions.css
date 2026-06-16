@@ -1207,6 +1207,168 @@
   cursor: not-allowed;
 }
 
+/* Publish confirm modal */
+.publish-confirm-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.publish-confirm-subtitle {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  line-height: 1.45;
+  padding-bottom: 0.25rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.publish-confirm-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.publish-confirm-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.publish-confirm-row dt {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.publish-confirm-row dd {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--brand-navy);
+  text-align: right;
+}
+
+.publish-confirm-live-tag {
+  display: inline-flex;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  background-color: var(--color-success-bg);
+  color: var(--color-success);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.publish-confirm-operators-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.publish-confirm-operators-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.publish-confirm-operator-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.publish-confirm-operator-tag {
+  padding: 0.3rem 0.65rem;
+  border-radius: 8px;
+  background-color: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.publish-confirm-notify-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.85rem 1rem;
+  border-radius: 8px;
+  background-color: #fecaca;
+}
+
+.publish-confirm-notify-text {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: white;
+}
+
+.publish-confirm-toggle {
+  position: relative;
+  flex-shrink: 0;
+  width: 44px;
+  height: 24px;
+  border: none;
+  border-radius: 999px;
+  background-color: rgba(127, 29, 29, 0.35);
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.publish-confirm-toggle.active {
+  background-color: #991b1b;
+}
+
+.publish-confirm-toggle-thumb {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background-color: white;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.15);
+  transition: transform 0.15s ease;
+}
+
+.publish-confirm-toggle.active .publish-confirm-toggle-thumb {
+  transform: translateX(20px);
+}
+
+.publish-confirm-footer {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.65rem;
+}
+
+.publish-confirm-btn {
+  padding: 0.7rem 1rem;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.publish-confirm-btn-cancel {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--brand-navy);
+  color: var(--brand-navy);
+}
+
+.publish-confirm-btn-cancel:hover {
+  background-color: var(--bg-tertiary);
+}
+
+.publish-confirm-btn-submit {
+  background-color: var(--brand-orange);
+  border: 1px solid var(--brand-orange);
+  color: white;
+}
+
+.publish-confirm-btn-submit:hover {
+  background-color: var(--brand-orange-hover);
+  border-color: var(--brand-orange-hover);
+}
+
 .env-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));

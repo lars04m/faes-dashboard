@@ -79,6 +79,15 @@ interface PublishData {
   operatorsOnShift: OperatorOnShift[];
 }
 
+interface PublishConfirmDetails {
+  publishingVersion: string;
+  publisherName: string;
+  replacingVersion: string;
+  approvedBy: string;
+  approvedDate: string;
+  affectedOperators: string[];
+}
+
 interface RejectionFeedback {
   reviewerName: string;
   reviewerInitials: string;
@@ -432,6 +441,20 @@ function getPublishData(entry: VersionEntry): PublishData {
       date: entry.updatedAt,
     }
   );
+}
+
+function getPublishConfirmDetails(
+  entry: VersionEntry,
+  publishData: PublishData,
+): PublishConfirmDetails {
+  return {
+    publishingVersion: entry.version,
+    publisherName: entry.author.split(' ')[0] ?? entry.author,
+    replacingVersion: 'v3.2',
+    approvedBy: 'Stefan',
+    approvedDate: 'June 3rd',
+    affectedOperators: publishData.operatorsOnShift.map((operator) => operator.name),
+  };
 }
 
 function getRejectionData(entry: VersionEntry): RejectionData {
@@ -1220,6 +1243,117 @@ const RejectModal: React.FC<RejectModalProps> = ({
   );
 };
 
+interface PublishConfirmModalProps {
+  details: PublishConfirmDetails;
+  onClose: () => void;
+  onConfirm: () => void;
+}
+
+const PublishConfirmModal: React.FC<PublishConfirmModalProps> = ({
+  details,
+  onClose,
+  onConfirm,
+}) => {
+  const [notifyOperators, setNotifyOperators] = useState(true);
+  const operatorCount = details.affectedOperators.length;
+  const operatorLabel = operatorCount === 1 ? 'operator effected' : 'operators effected';
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div
+        className="modal-content publish-confirm-modal"
+        onClick={(event) => event.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="publish-confirm-title"
+      >
+        <header className="modal-header">
+          <h2 id="publish-confirm-title" className="modal-title">
+            Publish {details.publishingVersion}?
+          </h2>
+          <button type="button" className="modal-close" onClick={onClose} aria-label="Close">
+            <X size={18} />
+          </button>
+        </header>
+
+        <div className="modal-body publish-confirm-body">
+          <p className="publish-confirm-subtitle">
+            This will immediately replace {details.replacingVersion} and make{' '}
+            {details.publishingVersion} the live instruction!
+          </p>
+
+          <dl className="publish-confirm-rows">
+            <div className="publish-confirm-row">
+              <dt>Publishing</dt>
+              <dd>
+                {details.publishingVersion} &bull; {details.publisherName}
+              </dd>
+            </div>
+            <div className="publish-confirm-row">
+              <dt>Replacing</dt>
+              <dd>
+                <span className="publish-confirm-live-tag">
+                  {details.replacingVersion} (live)
+                </span>
+              </dd>
+            </div>
+            <div className="publish-confirm-row">
+              <dt>Approved by</dt>
+              <dd>
+                {details.approvedBy} &bull; {details.approvedDate}
+              </dd>
+            </div>
+          </dl>
+
+          <div className="publish-confirm-operators-section">
+            <p className="publish-confirm-operators-label">
+              {operatorCount} {operatorLabel}
+            </p>
+            <div className="publish-confirm-operator-tags">
+              {details.affectedOperators.map((name) => (
+                <span key={name} className="publish-confirm-operator-tag">
+                  {name}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          <div className="publish-confirm-notify-bar">
+            <span className="publish-confirm-notify-text">Notify operators on publish</span>
+            <button
+              type="button"
+              className={`publish-confirm-toggle${notifyOperators ? ' active' : ''}`}
+              role="switch"
+              aria-checked={notifyOperators}
+              aria-label="Notify operators on publish"
+              onClick={() => setNotifyOperators((prev) => !prev)}
+            >
+              <span className="publish-confirm-toggle-thumb" />
+            </button>
+          </div>
+        </div>
+
+        <footer className="modal-footer publish-confirm-footer">
+          <button
+            type="button"
+            className="publish-confirm-btn publish-confirm-btn-cancel"
+            onClick={onClose}
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            className="publish-confirm-btn publish-confirm-btn-submit"
+            onClick={onConfirm}
+          >
+            Publish {details.publishingVersion}
+          </button>
+        </footer>
+      </div>
+    </div>
+  );
+};
+
 interface ReviewViewProps {
   entry: VersionEntry;
   onBack: () => void;
@@ -1317,6 +1451,8 @@ interface PublishViewProps {
 
 const PublishView: React.FC<PublishViewProps> = ({ entry, onBack, onOpenRejectModal }) => {
   const publishData = getPublishData(entry);
+  const publishConfirmDetails = getPublishConfirmDetails(entry, publishData);
+  const [isPublishModalOpen, setIsPublishModalOpen] = useState(false);
 
   return (
     <div className="review-page">
@@ -1356,10 +1492,22 @@ const PublishView: React.FC<PublishViewProps> = ({ entry, onBack, onOpenRejectMo
         >
           Reject
         </button>
-        <button type="button" className="review-btn review-btn-approve">
+        <button
+          type="button"
+          className="review-btn review-btn-approve"
+          onClick={() => setIsPublishModalOpen(true)}
+        >
           Publish {publishData.version}
         </button>
       </div>
+
+      {isPublishModalOpen && (
+        <PublishConfirmModal
+          details={publishConfirmDetails}
+          onClose={() => setIsPublishModalOpen(false)}
+          onConfirm={() => setIsPublishModalOpen(false)}
+        />
+      )}
     </div>
   );
 };
