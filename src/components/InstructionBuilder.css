@@ -294,3 +294,65 @@
   background-color: var(--color-success);
   border-color: rgba(255,255,255,0.2);
 }
+
+.builder-rejection-banner {
+  margin-bottom: 1.25rem;
+  padding: 1rem 1.25rem;
+  border-left: 4px solid var(--color-danger);
+}
+
+.builder-rejection-banner strong {
+  display: block;
+  margin-bottom: 0.35rem;
+  color: var(--brand-navy);
+}
+
+.builder-rejection-banner p {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  line-height: 1.45;
+}
+
+.builder-context-card,
+.builder-empty {
+  padding: 1.25rem;
+}
+
+.builder-context-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.builder-context-grid dt {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  margin-bottom: 0.15rem;
+}
+
+.builder-context-grid dd {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--brand-navy);
+}
+
+.builder-context-note,
+.builder-empty p {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  line-height: 1.45;
+}
+
+.dashboard-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
