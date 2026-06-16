@@ -772,6 +772,129 @@
   cursor: not-allowed;
 }
 
+/* Publish operator impact */
+.publish-operator-card {
+  padding: 1.25rem;
+}
+
+.publish-notify-panel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.85rem 1rem;
+  margin-bottom: 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background-color: var(--bg-secondary);
+}
+
+.publish-notify-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--brand-navy);
+}
+
+.publish-notify-subtitle {
+  margin-top: 0.15rem;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.publish-toggle {
+  position: relative;
+  flex-shrink: 0;
+  width: 44px;
+  height: 24px;
+  border: none;
+  border-radius: 999px;
+  background-color: #cbd5e1;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.publish-toggle.active {
+  background-color: var(--brand-orange);
+}
+
+.publish-toggle-thumb {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background-color: white;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.15);
+  transition: transform 0.15s ease;
+}
+
+.publish-toggle.active .publish-toggle-thumb {
+  transform: translateX(20px);
+}
+
+.publish-operator-list {
+  list-style: none;
+}
+
+.publish-operator-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.85rem 0;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.publish-operator-item:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.publish-operator-profile {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.publish-operator-avatar {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background-color: var(--brand-navy);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.publish-operator-name {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--brand-navy);
+}
+
+.publish-operator-assignment {
+  margin-top: 0.1rem;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.publish-operator-badge {
+  flex-shrink: 0;
+  padding: 0.25rem 0.65rem;
+  border-radius: 999px;
+  background-color: rgba(239, 125, 0, 0.1);
+  border: 1px solid rgba(239, 125, 0, 0.2);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--brand-orange);
+}
+
 .env-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));

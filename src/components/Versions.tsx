@@ -62,6 +62,22 @@ interface ReviewData {
   previewSteps: PreviewStep[];
 }
 
+interface OperatorOnShift {
+  id: string;
+  name: string;
+  initials: string;
+  assignment: string;
+}
+
+interface PublishData {
+  author: string;
+  version: string;
+  date: string;
+  comment: string;
+  previewSteps: PreviewStep[];
+  operatorsOnShift: OperatorOnShift[];
+}
+
 const STATUS_ORDER: InstructionStatus[] = ['live', 'review', 'draft'];
 
 const VERSION_HISTORY_ORDER: VersionHistoryStatus[] = [
@@ -266,6 +282,42 @@ const VERSION_HISTORY_BY_INSTRUCTION: Record<string, VersionHistory> = {
   },
 };
 
+const DEFAULT_OPERATORS_ON_SHIFT: OperatorOnShift[] = [
+  {
+    id: 'op-1',
+    name: 'Stefan Witlox',
+    initials: 'SW',
+    assignment: 'Triage T-8',
+  },
+  {
+    id: 'op-2',
+    name: 'Tim Kuijpers',
+    initials: 'TK',
+    assignment: 'Triage T-8',
+  },
+];
+
+const DEFAULT_PREVIEW_STEPS: PreviewStep[] = [
+  { type: 'normal', title: 'Step 1', content: 'Put on gloves' },
+  { type: 'normal', title: 'Step 2', content: 'Tilt the product this way' },
+  {
+    type: 'removed',
+    title: 'Step 3 - REMOVED',
+    content: 'Tighten bolt X',
+  },
+  {
+    type: 'added',
+    title: 'Step 3 - ADDED',
+    content: 'Tighten bolt Y 4x',
+  },
+  {
+    type: 'visual',
+    title: 'Step 3 - Visual',
+    content: 'Image of 4x Y\'s placement',
+    badge: 'Visual',
+  },
+];
+
 const DEFAULT_REVIEW_DATA: ReviewData = {
   author: 'Jane Larsen',
   version: 'v3.3',
@@ -277,26 +329,17 @@ const DEFAULT_REVIEW_DATA: ReviewData = {
     'Clear and correct visuals',
     'Simple language and contains active wording',
   ],
-  previewSteps: [
-    { type: 'normal', title: 'Step 1', content: 'Put on gloves' },
-    { type: 'normal', title: 'Step 2', content: 'Tilt the product this way' },
-    {
-      type: 'removed',
-      title: 'Step 3 - REMOVED',
-      content: 'Tighten bolt X',
-    },
-    {
-      type: 'added',
-      title: 'Step 3 - ADDED',
-      content: 'Tighten bolt Y 4x',
-    },
-    {
-      type: 'visual',
-      title: 'Step 3 - Visual',
-      content: 'Image of 4x Y\'s placement',
-      badge: 'Visual',
-    },
-  ],
+  previewSteps: DEFAULT_PREVIEW_STEPS,
+};
+
+const DEFAULT_PUBLISH_DATA: PublishData = {
+  author: 'Jane Larsen',
+  version: 'v3.3',
+  date: 'June 1st',
+  comment:
+    'I added visuals for step 4 and replaced the text with more active wording.',
+  previewSteps: DEFAULT_PREVIEW_STEPS,
+  operatorsOnShift: DEFAULT_OPERATORS_ON_SHIFT,
 };
 
 const REVIEW_DATA_BY_ENTRY: Record<string, ReviewData> = {
@@ -308,10 +351,30 @@ const REVIEW_DATA_BY_ENTRY: Record<string, ReviewData> = {
   },
 };
 
+const PUBLISH_DATA_BY_ENTRY: Record<string, PublishData> = {
+  'v-1-ready': DEFAULT_PUBLISH_DATA,
+  'v-3-ready': {
+    ...DEFAULT_PUBLISH_DATA,
+    author: 'Marc Bakker',
+    version: 'v1.2',
+  },
+};
+
 function getReviewData(entry: VersionEntry): ReviewData {
   return (
     REVIEW_DATA_BY_ENTRY[entry.id] ?? {
       ...DEFAULT_REVIEW_DATA,
+      author: entry.author,
+      version: entry.version,
+      date: entry.updatedAt,
+    }
+  );
+}
+
+function getPublishData(entry: VersionEntry): PublishData {
+  return (
+    PUBLISH_DATA_BY_ENTRY[entry.id] ?? {
+      ...DEFAULT_PUBLISH_DATA,
       author: entry.author,
       version: entry.version,
       date: entry.updatedAt,
@@ -458,12 +521,24 @@ const StatusSection: React.FC<StatusSectionProps> = ({
 interface VersionEntryCardProps {
   entry: VersionEntry;
   onReview?: (entryId: string) => void;
+  onPublish?: (entryId: string) => void;
 }
 
-const VersionEntryCard: React.FC<VersionEntryCardProps> = ({ entry, onReview }) => {
+const VersionEntryCard: React.FC<VersionEntryCardProps> = ({
+  entry,
+  onReview,
+  onPublish,
+}) => {
   const config = VERSION_HISTORY_CONFIG[entry.status];
   const hasAction = Boolean(config.actionLabel);
   const isReviewAction = entry.status === 'draft' && config.actionLabel === 'Review';
+  const isPublishAction =
+    entry.status === 'ready-to-publish' && config.actionLabel === 'Publish';
+
+  const handleAction = () => {
+    if (isReviewAction) onReview?.(entry.id);
+    if (isPublishAction) onPublish?.(entry.id);
+  };
 
   return (
     <article className="version-entry-card">
@@ -493,11 +568,7 @@ const VersionEntryCard: React.FC<VersionEntryCardProps> = ({ entry, onReview }) 
             {config.badgeLabel}
           </span>
           {hasAction && (
-            <button
-              type="button"
-              className="version-action-btn"
-              onClick={isReviewAction ? () => onReview?.(entry.id) : undefined}
-            >
+            <button type="button" className="version-action-btn" onClick={handleAction}>
               {config.actionLabel}
             </button>
           )}
@@ -511,12 +582,14 @@ interface VersionHistorySectionProps {
   status: VersionHistoryStatus;
   entries: VersionEntry[];
   onReview?: (entryId: string) => void;
+  onPublish?: (entryId: string) => void;
 }
 
 const VersionHistorySection: React.FC<VersionHistorySectionProps> = ({
   status,
   entries,
   onReview,
+  onPublish,
 }) => {
   if (entries.length === 0) return null;
 
@@ -532,7 +605,12 @@ const VersionHistorySection: React.FC<VersionHistorySectionProps> = ({
 
       <div className="instruction-list">
         {entries.map((entry) => (
-          <VersionEntryCard key={entry.id} entry={entry} onReview={onReview} />
+          <VersionEntryCard
+            key={entry.id}
+            entry={entry}
+            onReview={onReview}
+            onPublish={onPublish}
+          />
         ))}
       </div>
     </section>
@@ -697,12 +775,14 @@ interface VersionHistoryViewProps {
   instruction: Instruction;
   onBack: () => void;
   onReview: (entryId: string) => void;
+  onPublish: (entryId: string) => void;
 }
 
 const VersionHistoryView: React.FC<VersionHistoryViewProps> = ({
   instruction,
   onBack,
   onReview,
+  onPublish,
 }) => {
   const history = getVersionHistory(instruction.id);
 
@@ -743,6 +823,7 @@ const VersionHistoryView: React.FC<VersionHistoryViewProps> = ({
             status={group.status}
             entries={group.entries}
             onReview={onReview}
+            onPublish={onPublish}
           />
         ))}
 
@@ -782,6 +863,129 @@ const PreviewStepCard: React.FC<PreviewStepCardProps> = ({ step }) => {
   );
 };
 
+interface VersionDetailsCardProps {
+  author: string;
+  version: string;
+  date: string;
+  comment: string;
+}
+
+const VersionDetailsCard: React.FC<VersionDetailsCardProps> = ({
+  author,
+  version,
+  date,
+  comment,
+}) => (
+  <section className="review-details-card glass-card">
+    <header className="review-section-header">
+      <span>VERSION DETAILS</span>
+    </header>
+
+    <dl className="review-meta-grid">
+      <div className="review-meta-item">
+        <dt>AUTHOR</dt>
+        <dd>{author}</dd>
+      </div>
+      <div className="review-meta-item">
+        <dt>VERSION</dt>
+        <dd>{version}</dd>
+      </div>
+      <div className="review-meta-item">
+        <dt>DATE</dt>
+        <dd>{date}</dd>
+      </div>
+    </dl>
+
+    <textarea
+      className="review-comment"
+      readOnly
+      value={comment}
+      aria-label="Author comment"
+    />
+  </section>
+);
+
+interface PreviewPanelProps {
+  previewSteps: PreviewStep[];
+}
+
+const PreviewPanel: React.FC<PreviewPanelProps> = ({ previewSteps }) => (
+  <section className="review-preview glass-card">
+    <header className="review-section-header">
+      <span>PREVIEW</span>
+      <div className="review-legend">
+        <span className="review-legend-item">
+          <span className="review-legend-dot review-legend-dot--removed" />
+          REMOVED
+        </span>
+        <span className="review-legend-item">
+          <span className="review-legend-dot review-legend-dot--added" />
+          ADDED
+        </span>
+      </div>
+    </header>
+
+    <div className="review-steps">
+      {previewSteps.map((step, index) => (
+        <PreviewStepCard key={`${step.title}-${index}`} step={step} />
+      ))}
+    </div>
+  </section>
+);
+
+interface OperatorImpactSectionProps {
+  operators: OperatorOnShift[];
+}
+
+const OperatorImpactSection: React.FC<OperatorImpactSectionProps> = ({ operators }) => {
+  const [notifyOperators, setNotifyOperators] = useState(true);
+  const operatorCount = operators.length;
+
+  return (
+    <section className="publish-operator-card glass-card">
+      <header className="review-section-header">
+        <span>OPERATOR IMPACT - {operatorCount} ON SHIFT</span>
+      </header>
+
+      <div className="publish-notify-panel">
+        <div className="publish-notify-copy">
+          <p className="publish-notify-title">Notify operators on publish</p>
+          <p className="publish-notify-subtitle">
+            Send an update to all operators on shift
+          </p>
+        </div>
+        <button
+          type="button"
+          className={`publish-toggle${notifyOperators ? ' active' : ''}`}
+          role="switch"
+          aria-checked={notifyOperators}
+          aria-label="Notify operators on publish"
+          onClick={() => setNotifyOperators((prev) => !prev)}
+        >
+          <span className="publish-toggle-thumb" />
+        </button>
+      </div>
+
+      <ul className="publish-operator-list">
+        {operators.map((operator) => (
+          <li key={operator.id} className="publish-operator-item">
+            <div className="publish-operator-profile">
+              <span className="publish-operator-avatar">{operator.initials}</span>
+              <div>
+                <p className="publish-operator-name">{operator.name}</p>
+                <p className="publish-operator-assignment">{operator.assignment}</p>
+              </div>
+            </div>
+            {notifyOperators && (
+              <span className="publish-operator-badge">Will be notified</span>
+            )}
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+};
+
 interface ReviewViewProps {
   entry: VersionEntry;
   onBack: () => void;
@@ -816,56 +1020,15 @@ const ReviewView: React.FC<ReviewViewProps> = ({ entry, onBack }) => {
       </header>
 
       <div className="review-layout">
-        <section className="review-preview glass-card">
-          <header className="review-section-header">
-            <span>PREVIEW</span>
-            <div className="review-legend">
-              <span className="review-legend-item">
-                <span className="review-legend-dot review-legend-dot--removed" />
-                REMOVED
-              </span>
-              <span className="review-legend-item">
-                <span className="review-legend-dot review-legend-dot--added" />
-                ADDED
-              </span>
-            </div>
-          </header>
-
-          <div className="review-steps">
-            {reviewData.previewSteps.map((step, index) => (
-              <PreviewStepCard key={`${step.title}-${index}`} step={step} />
-            ))}
-          </div>
-        </section>
+        <PreviewPanel previewSteps={reviewData.previewSteps} />
 
         <aside className="review-sidebar">
-          <section className="review-details-card glass-card">
-            <header className="review-section-header">
-              <span>VERSION DETAILS</span>
-            </header>
-
-            <dl className="review-meta-grid">
-              <div className="review-meta-item">
-                <dt>AUTHOR</dt>
-                <dd>{reviewData.author}</dd>
-              </div>
-              <div className="review-meta-item">
-                <dt>VERSION</dt>
-                <dd>{reviewData.version}</dd>
-              </div>
-              <div className="review-meta-item">
-                <dt>DATE</dt>
-                <dd>{reviewData.date}</dd>
-              </div>
-            </dl>
-
-            <textarea
-              className="review-comment"
-              readOnly
-              value={reviewData.comment}
-              aria-label="Author comment"
-            />
-          </section>
+          <VersionDetailsCard
+            author={reviewData.author}
+            version={reviewData.version}
+            date={reviewData.date}
+            comment={reviewData.comment}
+          />
 
           <section className="review-checklist-card glass-card">
             <header className="review-section-header">
@@ -907,6 +1070,56 @@ const ReviewView: React.FC<ReviewViewProps> = ({ entry, onBack }) => {
   );
 };
 
+interface PublishViewProps {
+  entry: VersionEntry;
+  onBack: () => void;
+}
+
+const PublishView: React.FC<PublishViewProps> = ({ entry, onBack }) => {
+  const publishData = getPublishData(entry);
+
+  return (
+    <div className="review-page">
+      <header className="review-header">
+        <div className="review-header-left">
+          <button type="button" className="version-back-btn" onClick={onBack}>
+            <ChevronLeft size={16} aria-hidden="true" />
+            Version History
+          </button>
+          <p className="version-history-breadcrumb">
+            /{publishData.version} - Publish
+          </p>
+        </div>
+        <span className="instruction-badge version-badge-approved">Approved</span>
+      </header>
+
+      <div className="review-layout">
+        <PreviewPanel previewSteps={publishData.previewSteps} />
+
+        <aside className="review-sidebar">
+          <VersionDetailsCard
+            author={publishData.author}
+            version={publishData.version}
+            date={publishData.date}
+            comment={publishData.comment}
+          />
+
+          <OperatorImpactSection operators={publishData.operatorsOnShift} />
+        </aside>
+      </div>
+
+      <div className="review-actions">
+        <button type="button" className="review-btn review-btn-reject">
+          Cancel
+        </button>
+        <button type="button" className="review-btn review-btn-approve">
+          Publish {publishData.version}
+        </button>
+      </div>
+    </div>
+  );
+};
+
 function findVersionEntry(instructionId: string, entryId: string): VersionEntry | undefined {
   return getVersionHistory(instructionId).entries.find((entry) => entry.id === entryId);
 }
@@ -916,6 +1129,9 @@ export const Versions: React.FC = () => {
     null,
   );
   const [selectedReviewEntryId, setSelectedReviewEntryId] = useState<string | null>(
+    null,
+  );
+  const [selectedPublishEntryId, setSelectedPublishEntryId] = useState<string | null>(
     null,
   );
 
@@ -929,28 +1145,43 @@ export const Versions: React.FC = () => {
     return findVersionEntry(selectedInstructionId, selectedReviewEntryId);
   }, [selectedInstructionId, selectedReviewEntryId]);
 
+  const selectedPublishEntry = useMemo(() => {
+    if (!selectedInstructionId || !selectedPublishEntryId) return undefined;
+    return findVersionEntry(selectedInstructionId, selectedPublishEntryId);
+  }, [selectedInstructionId, selectedPublishEntryId]);
+
+  const isWorkflowView = Boolean(
+    selectedInstruction && (selectedReviewEntry || selectedPublishEntry),
+  );
+
   const handleBackFromHistory = () => {
     setSelectedInstructionId(null);
     setSelectedReviewEntryId(null);
+    setSelectedPublishEntryId(null);
   };
 
   const handleBackFromReview = () => {
     setSelectedReviewEntryId(null);
   };
 
+  const handleBackFromPublish = () => {
+    setSelectedPublishEntryId(null);
+  };
+
   return (
     <div
-      className={`dashboard-container${
-        selectedInstruction && selectedReviewEntry ? ' dashboard-container--review' : ''
-      }`}
+      className={`dashboard-container${isWorkflowView ? ' dashboard-container--review' : ''}`}
     >
-      {selectedInstruction && selectedReviewEntry ? (
+      {selectedInstruction && selectedPublishEntry ? (
+        <PublishView entry={selectedPublishEntry} onBack={handleBackFromPublish} />
+      ) : selectedInstruction && selectedReviewEntry ? (
         <ReviewView entry={selectedReviewEntry} onBack={handleBackFromReview} />
       ) : selectedInstruction ? (
         <VersionHistoryView
           instruction={selectedInstruction}
           onBack={handleBackFromHistory}
           onReview={setSelectedReviewEntryId}
+          onPublish={setSelectedPublishEntryId}
         />
       ) : (
         <InstructionListView onSelectInstruction={setSelectedInstructionId} />
