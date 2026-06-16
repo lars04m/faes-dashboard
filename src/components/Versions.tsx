@@ -22,14 +22,15 @@ import './Versions.css';
  *   Instruction list → Version history → Review | Publish | Rejection
  *
  * Reject opens a modal first; publish opens a confirm modal from the Publish screen.
- * Success actions show a bottom-right toast.
+ * Approve, publish, and reject update in-memory state so the list reflects changes.
+ * Live and archived versions open a read-only preview.
  */
 
 // --- Types ---
 
 type InstructionStatus = 'live' | 'review' | 'draft';
 type StatusFilter = 'all' | InstructionStatus;
-type VersionHistoryStatus = 'live' | 'ready-to-publish' | 'draft';
+type VersionHistoryStatus = 'live' | 'ready-to-publish' | 'draft' | 'rejected';
 
 /** Summary row on the main instruction list. */
 interface Instruction {
@@ -58,7 +59,14 @@ interface VersionEntry {
 interface VersionHistory {
   totalVersions: number;
   entries: VersionEntry[];
-  archivedVersions: string[];
+  /** Older versions that can be opened in read-only preview. */
+  archivedEntries: VersionEntry[];
+}
+
+/** In-memory app state for instructions and their version histories. */
+interface VersionsDataState {
+  instructions: Instruction[];
+  versionHistoryByInstruction: Record<string, VersionHistory>;
 }
 
 type PreviewStepType = 'normal' | 'removed' | 'added' | 'visual';
@@ -191,6 +199,7 @@ const VERSION_HISTORY_ORDER: VersionHistoryStatus[] = [
   'live',
   'ready-to-publish',
   'draft',
+  'rejected',
 ];
 
 /** Badge and accent styling for each instruction list status. */
@@ -262,6 +271,13 @@ const VERSION_HISTORY_CONFIG: Record<
     badgeClass: 'version-badge-progress',
     actionLabel: 'Review',
   },
+  rejected: {
+    sectionLabel: 'REJECTED',
+    accentColor: 'var(--color-danger)',
+    avatarClass: 'version-avatar-rejected',
+    badgeLabel: 'Rejected',
+    badgeClass: 'version-badge-rejected',
+  },
 };
 
 /** Status filter pills on the instruction list toolbar. */
@@ -275,7 +291,7 @@ const FILTER_OPTIONS: { value: StatusFilter; label: string }[] = [
 // --- Mock data (demo content) ---
 
 /** All work instructions shown on the main list screen. */
-const INSTRUCTIONS: Instruction[] = [
+const INITIAL_INSTRUCTIONS: Instruction[] = [
   {
     id: 'wi-1',
     title: 'Product T8',
@@ -316,8 +332,28 @@ const INSTRUCTIONS: Instruction[] = [
   },
 ];
 
+/** Build a mock archived version entry for read-only preview. */
+function createArchivedEntry(
+  id: string,
+  version: string,
+  description: string,
+  author: string,
+  authorInitials: string,
+  updatedAt: string,
+): VersionEntry {
+  return {
+    id,
+    version,
+    description,
+    author,
+    authorInitials,
+    updatedAt,
+    status: 'draft',
+  };
+}
+
 /** Version history entries keyed by instruction id (wi-1, wi-2, …). */
-const VERSION_HISTORY_BY_INSTRUCTION: Record<string, VersionHistory> = {
+const INITIAL_VERSION_HISTORY: Record<string, VersionHistory> = {
   'wi-1': {
     totalVersions: 6,
     entries: [
@@ -349,7 +385,32 @@ const VERSION_HISTORY_BY_INSTRUCTION: Record<string, VersionHistory> = {
         status: 'draft',
       },
     ],
-    archivedVersions: ['v3.0', 'v3.1', 'v3.2'],
+    archivedEntries: [
+      createArchivedEntry(
+        'v-1-arch-v3.0',
+        'v3.0',
+        'Initial T8 assembly sequence',
+        'Jane Larsen',
+        'JL',
+        'April 12th',
+      ),
+      createArchivedEntry(
+        'v-1-arch-v3.1',
+        'v3.1',
+        'Added fixture pin alignment check',
+        'Jane Larsen',
+        'JL',
+        'May 3rd',
+      ),
+      createArchivedEntry(
+        'v-1-arch-v3.2',
+        'v3.2',
+        'Bolt Y torque spec updated to 4 Nm',
+        'Marc Bakker',
+        'MB',
+        'May 18th',
+      ),
+    ],
   },
   'wi-2': {
     totalVersions: 3,
@@ -364,7 +425,24 @@ const VERSION_HISTORY_BY_INSTRUCTION: Record<string, VersionHistory> = {
         status: 'live',
       },
     ],
-    archivedVersions: ['v1.0', 'v2.0'],
+    archivedEntries: [
+      createArchivedEntry(
+        'v-2-arch-v1.0',
+        'v1.0',
+        'First T28 bracket install procedure',
+        'Jane Larsen',
+        'JL',
+        'March 8th',
+      ),
+      createArchivedEntry(
+        'v-2-arch-v2.0',
+        'v2.0',
+        'Manual bracket alignment before jig L-14',
+        'Jane Larsen',
+        'JL',
+        'April 22nd',
+      ),
+    ],
   },
   'wi-3': {
     totalVersions: 4,
@@ -379,7 +457,32 @@ const VERSION_HISTORY_BY_INSTRUCTION: Record<string, VersionHistory> = {
         status: 'ready-to-publish',
       },
     ],
-    archivedVersions: ['v1.0', 'v1.1', 'v1.2'],
+    archivedEntries: [
+      createArchivedEntry(
+        'v-3-arch-v1.0',
+        'v1.0',
+        'Basic T10 probe alignment steps',
+        'Marc Bakker',
+        'MB',
+        'April 1st',
+      ),
+      createArchivedEntry(
+        'v-3-arch-v1.1',
+        'v1.1',
+        'Added lockout tag reminder',
+        'Marc Bakker',
+        'MB',
+        'May 10th',
+      ),
+      createArchivedEntry(
+        'v-3-arch-v1.2',
+        'v1.2',
+        'Optional calibration skip note',
+        'Marc Bakker',
+        'MB',
+        'May 25th',
+      ),
+    ],
   },
   'wi-4': {
     totalVersions: 1,
@@ -394,9 +497,16 @@ const VERSION_HISTORY_BY_INSTRUCTION: Record<string, VersionHistory> = {
         status: 'draft',
       },
     ],
-    archivedVersions: [],
+    archivedEntries: [],
   },
 };
+
+function createInitialVersionsData(): VersionsDataState {
+  return {
+    instructions: structuredClone(INITIAL_INSTRUCTIONS),
+    versionHistoryByInstruction: structuredClone(INITIAL_VERSION_HISTORY),
+  };
+}
 
 /** Default operators shown on the Publish screen for Product T8. */
 const DEFAULT_OPERATORS_ON_SHIFT: OperatorOnShift[] = [
@@ -635,24 +745,139 @@ const PUBLISH_DATA_BY_ENTRY: Record<string, PublishData> = {
 
 // --- Data lookup helpers ---
 
+function emptyVersionHistory(): VersionHistory {
+  return { totalVersions: 0, entries: [], archivedEntries: [] };
+}
+
+function getVersionHistory(
+  instructionId: string,
+  versionHistoryByInstruction: Record<string, VersionHistory>,
+): VersionHistory {
+  return versionHistoryByInstruction[instructionId] ?? emptyVersionHistory();
+}
+
+/** Find an active or archived entry within one instruction's history. */
+function findEntryInHistory(
+  history: VersionHistory,
+  entryId: string,
+): VersionEntry | undefined {
+  return (
+    history.entries.find((entry) => entry.id === entryId) ??
+    history.archivedEntries.find((entry) => entry.id === entryId)
+  );
+}
+
+function findVersionEntry(
+  instructionId: string,
+  entryId: string,
+  versionHistoryByInstruction: Record<string, VersionHistory>,
+): VersionEntry | undefined {
+  return findEntryInHistory(getVersionHistory(instructionId, versionHistoryByInstruction), entryId);
+}
+
+/** Find which instruction owns a version entry (used for publish "replacing" label). */
+function findInstructionIdForEntry(
+  entryId: string,
+  versionHistoryByInstruction: Record<string, VersionHistory>,
+): string | undefined {
+  return Object.entries(versionHistoryByInstruction).find(
+    ([, history]) => findEntryInHistory(history, entryId) !== undefined,
+  )?.[0];
+}
+
+/** Current live version for an instruction, if one exists. */
+function getLiveVersionForInstruction(
+  instructionId: string,
+  versionHistoryByInstruction: Record<string, VersionHistory>,
+): string | undefined {
+  const liveEntry = getVersionHistory(instructionId, versionHistoryByInstruction).entries.find(
+    (entry) => entry.status === 'live',
+  );
+  return liveEntry?.version;
+}
+
+/** Keep the instruction list card in sync after history changes. */
+function deriveInstructionFromHistory(
+  instruction: Instruction,
+  history: VersionHistory,
+): Instruction {
+  const liveEntry = history.entries.find((entry) => entry.status === 'live');
+  const readyEntry = history.entries.find((entry) => entry.status === 'ready-to-publish');
+  const draftEntry = history.entries.find((entry) => entry.status === 'draft');
+  const rejectedEntry = history.entries.find((entry) => entry.status === 'rejected');
+
+  let status: InstructionStatus;
+  let primary: VersionEntry | undefined;
+
+  if (liveEntry) {
+    status = 'live';
+    primary = liveEntry;
+  } else if (readyEntry) {
+    status = 'review';
+    primary = readyEntry;
+  } else if (draftEntry) {
+    status = 'draft';
+    primary = draftEntry;
+  } else if (rejectedEntry) {
+    status = 'draft';
+    primary = rejectedEntry;
+  } else {
+    return instruction;
+  }
+
+  return {
+    ...instruction,
+    status,
+    version: primary.version,
+    author: primary.author,
+    updatedAt: primary.updatedAt,
+    authorInitials: primary.authorInitials,
+  };
+}
+
+function syncInstructionInState(
+  state: VersionsDataState,
+  instructionId: string,
+): VersionsDataState {
+  const history = state.versionHistoryByInstruction[instructionId];
+  if (!history) return state;
+
+  return {
+    ...state,
+    instructions: state.instructions.map((instruction) =>
+      instruction.id === instructionId
+        ? deriveInstructionFromHistory(instruction, history)
+        : instruction,
+    ),
+  };
+}
+
 /** Preview steps for a version entry; falls back to the default T8 diff. */
 function getPreviewStepsForEntry(entry: VersionEntry): PreviewStep[] {
   return PREVIEW_STEPS_BY_ENTRY[entry.id] ?? DEFAULT_PREVIEW_STEPS;
 }
 
-/** Find which instruction owns a version entry (used for publish "replacing" label). */
-function findInstructionIdForEntry(entryId: string): string | undefined {
-  return Object.entries(VERSION_HISTORY_BY_INSTRUCTION).find(([, history]) =>
-    history.entries.some((entry) => entry.id === entryId),
-  )?.[0];
-}
+/** Build read-only version details from an entry. */
+function getReadOnlyVersionDetails(entry: VersionEntry): {
+  author: string;
+  version: string;
+  date: string;
+  comment: string;
+  previewSteps: PreviewStep[];
+} {
+  const publishData = PUBLISH_DATA_BY_ENTRY[entry.id];
+  const reviewData = REVIEW_DATA_BY_ENTRY[entry.id];
 
-/** Current live version for an instruction, if one exists. */
-function getLiveVersionForInstruction(instructionId: string): string | undefined {
-  const liveEntry = getVersionHistory(instructionId).entries.find(
-    (entry) => entry.status === 'live',
-  );
-  return liveEntry?.version;
+  return {
+    author: entry.author,
+    version: entry.version,
+    date: entry.updatedAt,
+    comment:
+      publishData?.comment ??
+      reviewData?.comment ??
+      `Archived ${entry.version}: ${entry.description}`,
+    previewSteps: getPreviewStepsForEntry(entry),
+  };
 }
 
 /** Build review screen content from mock overrides or entry metadata. */
@@ -691,10 +916,12 @@ function getPublishData(entry: VersionEntry): PublishData {
 function getPublishConfirmDetails(
   entry: VersionEntry,
   publishData: PublishData,
+  versionHistoryByInstruction: Record<string, VersionHistory>,
 ): PublishConfirmDetails {
-  const instructionId = findInstructionIdForEntry(entry.id);
+  const instructionId = findInstructionIdForEntry(entry.id, versionHistoryByInstruction);
   const replacingVersion =
-    (instructionId && getLiveVersionForInstruction(instructionId)) ?? 'v3.2';
+    (instructionId && getLiveVersionForInstruction(instructionId, versionHistoryByInstruction)) ??
+    'v3.2';
 
   return {
     publishingVersion: entry.version,
@@ -729,6 +956,7 @@ const HISTORY_SECTION_ICONS: Record<VersionHistoryStatus, React.ElementType> = {
   live: Bell,
   'ready-to-publish': CheckCircle2,
   draft: Pencil,
+  rejected: MessageCircle,
 };
 
 /** True when the instruction matches the search box text. */
@@ -752,17 +980,6 @@ function matchesSearch(instruction: Instruction, query: string): boolean {
 /** True when the instruction matches the selected status filter pill. */
 function matchesFilter(instruction: Instruction, filter: StatusFilter): boolean {
   return filter === 'all' || instruction.status === filter;
-}
-
-/** Load version history for an instruction, or an empty fallback. */
-function getVersionHistory(instructionId: string): VersionHistory {
-  return (
-    VERSION_HISTORY_BY_INSTRUCTION[instructionId] ?? {
-      totalVersions: 1,
-      entries: [],
-      archivedVersions: [],
-    }
-  );
 }
 
 // --- Instruction list (home screen) ---
@@ -865,26 +1082,49 @@ interface VersionEntryCardProps {
   entry: VersionEntry;
   onReview?: (entryId: string) => void;
   onPublish?: (entryId: string) => void;
+  onView?: (entryId: string) => void;
 }
 
 const VersionEntryCard: React.FC<VersionEntryCardProps> = ({
   entry,
   onReview,
   onPublish,
+  onView,
 }) => {
   const config = VERSION_HISTORY_CONFIG[entry.status];
   const hasAction = Boolean(config.actionLabel);
   const isReviewAction = entry.status === 'draft' && config.actionLabel === 'Review';
   const isPublishAction =
     entry.status === 'ready-to-publish' && config.actionLabel === 'Publish';
+  const isViewable = entry.status === 'live' && Boolean(onView);
 
-  const handleAction = () => {
+  const handleAction = (event: React.MouseEvent) => {
+    event.stopPropagation();
     if (isReviewAction) onReview?.(entry.id);
     if (isPublishAction) onPublish?.(entry.id);
   };
 
+  const handleView = () => {
+    if (isViewable) onView?.(entry.id);
+  };
+
   return (
-    <article className="version-entry-card">
+    <article
+      className={`version-entry-card${isViewable ? ' version-entry-card--clickable' : ''}`}
+      onClick={isViewable ? handleView : undefined}
+      onKeyDown={
+        isViewable
+          ? (event) => {
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                handleView();
+              }
+            }
+          : undefined
+      }
+      role={isViewable ? 'button' : undefined}
+      tabIndex={isViewable ? 0 : undefined}
+    >
       <span
         className="instruction-accent"
         style={{ backgroundColor: config.accentColor }}
@@ -926,6 +1166,7 @@ interface VersionHistorySectionProps {
   entries: VersionEntry[];
   onReview?: (entryId: string) => void;
   onPublish?: (entryId: string) => void;
+  onView?: (entryId: string) => void;
 }
 
 const VersionHistorySection: React.FC<VersionHistorySectionProps> = ({
@@ -933,6 +1174,7 @@ const VersionHistorySection: React.FC<VersionHistorySectionProps> = ({
   entries,
   onReview,
   onPublish,
+  onView,
 }) => {
   if (entries.length === 0) return null;
 
@@ -953,6 +1195,7 @@ const VersionHistorySection: React.FC<VersionHistorySectionProps> = ({
             entry={entry}
             onReview={onReview}
             onPublish={onPublish}
+            onView={onView}
           />
         ))}
       </div>
@@ -961,16 +1204,20 @@ const VersionHistorySection: React.FC<VersionHistorySectionProps> = ({
 };
 
 interface ArchivedSectionProps {
-  archivedVersions: string[];
+  archivedEntries: VersionEntry[];
+  onViewEntry: (entryId: string) => void;
 }
 
-const ArchivedSection: React.FC<ArchivedSectionProps> = ({ archivedVersions }) => {
+const ArchivedSection: React.FC<ArchivedSectionProps> = ({
+  archivedEntries,
+  onViewEntry,
+}) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
-  if (archivedVersions.length === 0) return null;
+  if (archivedEntries.length === 0) return null;
 
   const versionLabel =
-    archivedVersions.length === 1 ? 'older version' : 'older versions';
+    archivedEntries.length === 1 ? 'older version' : 'older versions';
 
   return (
     <section className="instruction-section">
@@ -987,14 +1234,14 @@ const ArchivedSection: React.FC<ArchivedSectionProps> = ({ archivedVersions }) =
       >
         <div className="version-archived-content">
           <div className="version-archived-tags">
-            {archivedVersions.map((version) => (
-              <span key={version} className="version-archived-tag">
-                {version}
+            {archivedEntries.map((entry) => (
+              <span key={entry.id} className="version-archived-tag">
+                {entry.version}
               </span>
             ))}
           </div>
           <p className="version-archived-label">
-            {archivedVersions.length} {versionLabel} &bull; tap to expand
+            {archivedEntries.length} {versionLabel} &bull; tap to expand
           </p>
         </div>
         <ChevronRight className="instruction-chevron" size={18} aria-hidden="true" />
@@ -1002,9 +1249,16 @@ const ArchivedSection: React.FC<ArchivedSectionProps> = ({ archivedVersions }) =
 
       {isExpanded && (
         <ul className="version-archived-list">
-          {archivedVersions.map((version) => (
-            <li key={version} className="version-archived-list-item">
-              {version}
+          {archivedEntries.map((entry) => (
+            <li key={entry.id}>
+              <button
+                type="button"
+                className="version-archived-list-item"
+                onClick={() => onViewEntry(entry.id)}
+              >
+                <span className="version-archived-list-version">{entry.version}</span>
+                <span className="version-archived-list-description">{entry.description}</span>
+              </button>
             </li>
           ))}
         </ul>
@@ -1014,11 +1268,13 @@ const ArchivedSection: React.FC<ArchivedSectionProps> = ({ archivedVersions }) =
 };
 
 interface InstructionListViewProps {
+  instructions: Instruction[];
   onSelectInstruction: (instructionId: string) => void;
 }
 
 /** Main list with search, status filters, and grouped instruction cards. */
 const InstructionListView: React.FC<InstructionListViewProps> = ({
+  instructions,
   onSelectInstruction,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -1026,12 +1282,12 @@ const InstructionListView: React.FC<InstructionListViewProps> = ({
 
   const filteredInstructions = useMemo(
     () =>
-      INSTRUCTIONS.filter(
+      instructions.filter(
         (instruction) =>
           matchesSearch(instruction, searchTerm) &&
           matchesFilter(instruction, statusFilter),
       ),
-    [searchTerm, statusFilter],
+    [instructions, searchTerm, statusFilter],
   );
 
   const groupedInstructions = useMemo(() => {
@@ -1119,20 +1375,22 @@ const InstructionListView: React.FC<InstructionListViewProps> = ({
 
 interface VersionHistoryViewProps {
   instruction: Instruction;
+  history: VersionHistory;
   onBack: () => void;
   onReview: (entryId: string) => void;
   onPublish: (entryId: string) => void;
+  onViewEntry: (entryId: string) => void;
 }
 
 /** All versions for one instruction, grouped by status with Review/Publish actions. */
 const VersionHistoryView: React.FC<VersionHistoryViewProps> = ({
   instruction,
+  history,
   onBack,
   onReview,
   onPublish,
+  onViewEntry,
 }) => {
-  const history = getVersionHistory(instruction.id);
-
   const groupedEntries = useMemo(() => {
     const groups = VERSION_HISTORY_ORDER.reduce(
       (acc, status) => {
@@ -1171,10 +1429,14 @@ const VersionHistoryView: React.FC<VersionHistoryViewProps> = ({
             entries={group.entries}
             onReview={onReview}
             onPublish={onPublish}
+            onView={onViewEntry}
           />
         ))}
 
-        <ArchivedSection archivedVersions={history.archivedVersions} />
+        <ArchivedSection
+          archivedEntries={history.archivedEntries}
+          onViewEntry={onViewEntry}
+        />
       </div>
     </>
   );
@@ -1741,6 +2003,7 @@ const ReviewView: React.FC<ReviewViewProps> = ({
 
 interface PublishViewProps {
   entry: VersionEntry;
+  versionHistoryByInstruction: Record<string, VersionHistory>;
   onBack: () => void;
   onOpenRejectModal: () => void;
   onPublishConfirm: () => void;
@@ -1749,12 +2012,17 @@ interface PublishViewProps {
 /** Publish an approved version; opens a confirm modal before going live. */
 const PublishView: React.FC<PublishViewProps> = ({
   entry,
+  versionHistoryByInstruction,
   onBack,
   onOpenRejectModal,
   onPublishConfirm,
 }) => {
   const publishData = getPublishData(entry);
-  const publishConfirmDetails = getPublishConfirmDetails(entry, publishData);
+  const publishConfirmDetails = getPublishConfirmDetails(
+    entry,
+    publishData,
+    versionHistoryByInstruction,
+  );
   const [isPublishModalOpen, setIsPublishModalOpen] = useState(false);
 
   const handlePublishConfirm = () => {
@@ -1897,9 +2165,69 @@ const RejectionView: React.FC<RejectionViewProps> = ({
   );
 };
 
+type ReadOnlyViewMode = 'live' | 'archived';
+
+interface ReadOnlyVersionViewProps {
+  entry: VersionEntry;
+  viewMode: ReadOnlyViewMode;
+  onBack: () => void;
+}
+
+/** Read-only preview for live or archived versions (no workflow actions). */
+const ReadOnlyVersionView: React.FC<ReadOnlyVersionViewProps> = ({
+  entry,
+  viewMode,
+  onBack,
+}) => {
+  const details = getReadOnlyVersionDetails(entry);
+  const isLive = viewMode === 'live';
+
+  return (
+    <div className="review-page">
+      <header className="review-header">
+        <div className="review-header-left">
+          <button type="button" className="version-back-btn" onClick={onBack}>
+            <ChevronLeft size={16} aria-hidden="true" />
+            Version History
+          </button>
+          <p className="version-history-breadcrumb">
+            /{entry.version} - {isLive ? 'Live' : 'Archived'}
+          </p>
+        </div>
+        <span
+          className={`instruction-badge ${
+            isLive ? 'instruction-badge-live' : 'version-badge-archived'
+          }`}
+        >
+          {isLive ? 'Live' : 'Archived'}
+        </span>
+      </header>
+
+      <div className="review-layout">
+        <PreviewPanel previewSteps={details.previewSteps} />
+
+        <aside className="review-sidebar">
+          <div className="review-sidebar-content">
+            <VersionDetailsCard
+              author={details.author}
+              version={details.version}
+              date={details.date}
+              comment={details.comment}
+            />
+          </div>
+        </aside>
+      </div>
+    </div>
+  );
+};
+
 /** Look up a single version entry by instruction id and entry id. */
-function findVersionEntry(instructionId: string, entryId: string): VersionEntry | undefined {
-  return getVersionHistory(instructionId).entries.find((entry) => entry.id === entryId);
+function findVersionEntryInState(
+  instructionId: string,
+  entryId: string,
+  versionHistoryByInstruction: Record<string, VersionHistory>,
+): VersionEntry | undefined {
+  return findVersionEntry(instructionId, entryId, versionHistoryByInstruction);
 }
 
 // --- Root component: screen routing and global actions ---
@@ -1909,6 +2237,8 @@ export interface VersionsProps {
 }
 
 export const Versions: React.FC<VersionsProps> = ({ onNavigateToBuilder }) => {
+  const [versionsData, setVersionsData] = useState<VersionsDataState>(createInitialVersionsData);
+
   // Which instruction and version entry the user is viewing.
   const [selectedInstructionId, setSelectedInstructionId] = useState<string | null>(
     null,
@@ -1922,11 +2252,16 @@ export const Versions: React.FC<VersionsProps> = ({ onNavigateToBuilder }) => {
   const [selectedRejectionEntryId, setSelectedRejectionEntryId] = useState<string | null>(
     null,
   );
+  const [selectedReadOnlyEntryId, setSelectedReadOnlyEntryId] = useState<string | null>(
+    null,
+  );
   const [rejectModalEntryId, setRejectModalEntryId] = useState<string | null>(null);
   const [rejectionSubmission, setRejectionSubmission] = useState<RejectionSubmission | null>(
     null,
   );
   const [actionToast, setActionToast] = useState<ActionToastState | null>(null);
+
+  const { instructions, versionHistoryByInstruction } = versionsData;
 
   // Show a toast for 4.5s, then hide it automatically.
   const showActionToast = useCallback(
@@ -1952,34 +2287,75 @@ export const Versions: React.FC<VersionsProps> = ({ onNavigateToBuilder }) => {
 
   // Resolve selected items from ids (avoids storing full objects in state).
   const selectedInstruction = useMemo(
-    () => INSTRUCTIONS.find((instruction) => instruction.id === selectedInstructionId),
-    [selectedInstructionId],
+    () => instructions.find((instruction) => instruction.id === selectedInstructionId),
+    [instructions, selectedInstructionId],
   );
 
   const selectedReviewEntry = useMemo(() => {
     if (!selectedInstructionId || !selectedReviewEntryId) return undefined;
-    return findVersionEntry(selectedInstructionId, selectedReviewEntryId);
-  }, [selectedInstructionId, selectedReviewEntryId]);
+    return findVersionEntryInState(
+      selectedInstructionId,
+      selectedReviewEntryId,
+      versionHistoryByInstruction,
+    );
+  }, [selectedInstructionId, selectedReviewEntryId, versionHistoryByInstruction]);
 
   const selectedPublishEntry = useMemo(() => {
     if (!selectedInstructionId || !selectedPublishEntryId) return undefined;
-    return findVersionEntry(selectedInstructionId, selectedPublishEntryId);
-  }, [selectedInstructionId, selectedPublishEntryId]);
+    return findVersionEntryInState(
+      selectedInstructionId,
+      selectedPublishEntryId,
+      versionHistoryByInstruction,
+    );
+  }, [selectedInstructionId, selectedPublishEntryId, versionHistoryByInstruction]);
 
   const selectedRejectionEntry = useMemo(() => {
     if (!selectedInstructionId || !selectedRejectionEntryId) return undefined;
-    return findVersionEntry(selectedInstructionId, selectedRejectionEntryId);
-  }, [selectedInstructionId, selectedRejectionEntryId]);
+    return findVersionEntryInState(
+      selectedInstructionId,
+      selectedRejectionEntryId,
+      versionHistoryByInstruction,
+    );
+  }, [selectedInstructionId, selectedRejectionEntryId, versionHistoryByInstruction]);
 
   const rejectModalEntry = useMemo(() => {
     if (!selectedInstructionId || !rejectModalEntryId) return undefined;
-    return findVersionEntry(selectedInstructionId, rejectModalEntryId);
-  }, [selectedInstructionId, rejectModalEntryId]  );
+    return findVersionEntryInState(
+      selectedInstructionId,
+      rejectModalEntryId,
+      versionHistoryByInstruction,
+    );
+  }, [selectedInstructionId, rejectModalEntryId, versionHistoryByInstruction]);
 
-  // Review/Publish/Rejection screens use a fixed viewport height.
+  const selectedReadOnlyEntry = useMemo(() => {
+    if (!selectedInstructionId || !selectedReadOnlyEntryId) return undefined;
+    return findVersionEntryInState(
+      selectedInstructionId,
+      selectedReadOnlyEntryId,
+      versionHistoryByInstruction,
+    );
+  }, [selectedInstructionId, selectedReadOnlyEntryId, versionHistoryByInstruction]);
+
+  const readOnlyViewMode = useMemo((): ReadOnlyViewMode => {
+    if (!selectedInstructionId || !selectedReadOnlyEntryId) return 'live';
+    const history = getVersionHistory(selectedInstructionId, versionHistoryByInstruction);
+    return history.archivedEntries.some((entry) => entry.id === selectedReadOnlyEntryId)
+      ? 'archived'
+      : 'live';
+  }, [selectedInstructionId, selectedReadOnlyEntryId, versionHistoryByInstruction]);
+
+  const selectedInstructionHistory = useMemo(() => {
+    if (!selectedInstructionId) return emptyVersionHistory();
+    return getVersionHistory(selectedInstructionId, versionHistoryByInstruction);
+  }, [selectedInstructionId, versionHistoryByInstruction]);
+
+  // Review/Publish/Rejection/Read-only screens use a fixed viewport height.
   const isWorkflowView = Boolean(
     selectedInstruction &&
-      (selectedReviewEntry || selectedPublishEntry || selectedRejectionEntry),
+      (selectedReviewEntry ||
+        selectedPublishEntry ||
+        selectedRejectionEntry ||
+        selectedReadOnlyEntry),
   );
 
   const handleBackFromHistory = () => {
@@ -1987,6 +2363,7 @@ export const Versions: React.FC<VersionsProps> = ({ onNavigateToBuilder }) => {
     setSelectedReviewEntryId(null);
     setSelectedPublishEntryId(null);
     setSelectedRejectionEntryId(null);
+    setSelectedReadOnlyEntryId(null);
     setRejectModalEntryId(null);
     setRejectionSubmission(null);
   };
@@ -2004,6 +2381,14 @@ export const Versions: React.FC<VersionsProps> = ({ onNavigateToBuilder }) => {
     setRejectionSubmission(null);
   };
 
+  const handleBackFromReadOnly = () => {
+    setSelectedReadOnlyEntryId(null);
+  };
+
+  const handleViewEntry = (entryId: string) => {
+    setSelectedReadOnlyEntryId(entryId);
+  };
+
   const handleOpenRejectModal = (entryId: string) => {
     setRejectModalEntryId(entryId);
   };
@@ -2013,7 +2398,29 @@ export const Versions: React.FC<VersionsProps> = ({ onNavigateToBuilder }) => {
   };
 
   const handleSendRejection = (submission: RejectionSubmission) => {
-    if (!rejectModalEntryId || !rejectModalEntry) return;
+    if (!selectedInstructionId || !rejectModalEntryId || !rejectModalEntry) return;
+
+    setVersionsData((prev) => {
+      const history = prev.versionHistoryByInstruction[selectedInstructionId];
+      if (!history) return prev;
+
+      const nextHistory: VersionHistory = {
+        ...history,
+        entries: history.entries.map((entry) =>
+          entry.id === rejectModalEntryId ? { ...entry, status: 'rejected' } : entry,
+        ),
+      };
+
+      const next: VersionsDataState = {
+        ...prev,
+        versionHistoryByInstruction: {
+          ...prev.versionHistoryByInstruction,
+          [selectedInstructionId]: nextHistory,
+        },
+      };
+
+      return syncInstructionInState(next, selectedInstructionId);
+    });
 
     // Save modal input, then open the Rejection screen.
     setRejectionSubmission(submission);
@@ -2028,18 +2435,70 @@ export const Versions: React.FC<VersionsProps> = ({ onNavigateToBuilder }) => {
   };
 
   const handlePublishConfirm = () => {
-    if (!selectedPublishEntry) return;
+    if (!selectedInstructionId || !selectedPublishEntryId || !selectedPublishEntry) return;
 
     const { version } = selectedPublishEntry;
-    // Return to version history and confirm the publish action.
+    const publishingEntryId = selectedPublishEntryId;
+
+    setVersionsData((prev) => {
+      const history = prev.versionHistoryByInstruction[selectedInstructionId];
+      if (!history) return prev;
+
+      const liveEntry = history.entries.find((entry) => entry.status === 'live');
+      let entries = history.entries.map((entry) =>
+        entry.id === publishingEntryId ? { ...entry, status: 'live' as const } : entry,
+      );
+      let archivedEntries = [...history.archivedEntries];
+
+      if (liveEntry && liveEntry.id !== publishingEntryId) {
+        entries = entries.filter((entry) => entry.id !== liveEntry.id);
+        archivedEntries = [liveEntry, ...archivedEntries];
+      }
+
+      const nextHistory: VersionHistory = { ...history, entries, archivedEntries };
+      const next: VersionsDataState = {
+        ...prev,
+        versionHistoryByInstruction: {
+          ...prev.versionHistoryByInstruction,
+          [selectedInstructionId]: nextHistory,
+        },
+      };
+
+      return syncInstructionInState(next, selectedInstructionId);
+    });
+
     setSelectedPublishEntryId(null);
     showActionToast(`${version} is now live and replaced the previous version.`);
   };
 
   const handleApproveReview = () => {
-    if (!selectedReviewEntry) return;
+    if (!selectedInstructionId || !selectedReviewEntryId || !selectedReviewEntry) return;
 
     const { version } = selectedReviewEntry;
+    const approvedEntryId = selectedReviewEntryId;
+
+    setVersionsData((prev) => {
+      const history = prev.versionHistoryByInstruction[selectedInstructionId];
+      if (!history) return prev;
+
+      const nextHistory: VersionHistory = {
+        ...history,
+        entries: history.entries.map((entry) =>
+          entry.id === approvedEntryId ? { ...entry, status: 'ready-to-publish' } : entry,
+        ),
+      };
+
+      const next: VersionsDataState = {
+        ...prev,
+        versionHistoryByInstruction: {
+          ...prev.versionHistoryByInstruction,
+          [selectedInstructionId]: nextHistory,
+        },
+      };
+
+      return syncInstructionInState(next, selectedInstructionId);
+    });
+
     setSelectedReviewEntryId(null);
     showActionToast(`${version} approved and is ready to publish.`);
   };
@@ -2069,6 +2528,7 @@ export const Versions: React.FC<VersionsProps> = ({ onNavigateToBuilder }) => {
           <>
             <PublishView
               entry={selectedPublishEntry}
+              versionHistoryByInstruction={versionHistoryByInstruction}
               onBack={handleBackFromPublish}
               onOpenRejectModal={() => handleOpenRejectModal(selectedPublishEntry.id)}
               onPublishConfirm={handlePublishConfirm}
@@ -2099,15 +2559,26 @@ export const Versions: React.FC<VersionsProps> = ({ onNavigateToBuilder }) => {
               />
             )}
           </>
+        ) : selectedInstruction && selectedReadOnlyEntry ? (
+          <ReadOnlyVersionView
+            entry={selectedReadOnlyEntry}
+            viewMode={readOnlyViewMode}
+            onBack={handleBackFromReadOnly}
+          />
         ) : selectedInstruction ? (
           <VersionHistoryView
             instruction={selectedInstruction}
+            history={selectedInstructionHistory}
             onBack={handleBackFromHistory}
             onReview={setSelectedReviewEntryId}
             onPublish={setSelectedPublishEntryId}
+            onViewEntry={handleViewEntry}
           />
         ) : (
-          <InstructionListView onSelectInstruction={setSelectedInstructionId} />
+          <InstructionListView
+            instructions={instructions}
+            onSelectInstruction={setSelectedInstructionId}
+          />
         )}
       </div>
 
