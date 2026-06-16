@@ -43,6 +43,24 @@ interface VersionHistory {
   archivedVersions: string[];
 }
 
+type PreviewStepType = 'normal' | 'removed' | 'added' | 'visual';
+
+interface PreviewStep {
+  type: PreviewStepType;
+  title: string;
+  content: string;
+  badge?: string;
+}
+
+interface ReviewData {
+  author: string;
+  version: string;
+  date: string;
+  comment: string;
+  checklist: string[];
+  previewSteps: PreviewStep[];
+}
+
 const STATUS_ORDER: InstructionStatus[] = ['live', 'review', 'draft'];
 
 const VERSION_HISTORY_ORDER: VersionHistoryStatus[] = [
@@ -247,6 +265,59 @@ const VERSION_HISTORY_BY_INSTRUCTION: Record<string, VersionHistory> = {
   },
 };
 
+const DEFAULT_REVIEW_DATA: ReviewData = {
+  author: 'Jane Larsen',
+  version: 'v3.3',
+  date: 'June 1st',
+  comment:
+    'I added visuals for step 4 and replaced the text with more active wording.',
+  checklist: [
+    'Technically accurate and safe to follow',
+    'Clear and correct visuals',
+    'Simple language and contains active wording',
+  ],
+  previewSteps: [
+    { type: 'normal', title: 'Step 1', content: 'Put on gloves' },
+    { type: 'normal', title: 'Step 2', content: 'Tilt the product this way' },
+    {
+      type: 'removed',
+      title: 'Step 3 - REMOVED',
+      content: 'Tighten bolt X',
+    },
+    {
+      type: 'added',
+      title: 'Step 3 - ADDED',
+      content: 'Tighten bolt Y 4x',
+    },
+    {
+      type: 'visual',
+      title: 'Step 3 - Visual',
+      content: 'Image of 4x Y\'s placement',
+      badge: 'Visual',
+    },
+  ],
+};
+
+const REVIEW_DATA_BY_ENTRY: Record<string, ReviewData> = {
+  'v-1-draft': DEFAULT_REVIEW_DATA,
+  'v-4-draft': {
+    ...DEFAULT_REVIEW_DATA,
+    author: 'Sara Willems',
+    version: 'v0.9',
+  },
+};
+
+function getReviewData(entry: VersionEntry): ReviewData {
+  return (
+    REVIEW_DATA_BY_ENTRY[entry.id] ?? {
+      ...DEFAULT_REVIEW_DATA,
+      author: entry.author,
+      version: entry.version,
+      date: entry.updatedAt,
+    }
+  );
+}
+
 const LIST_SECTION_ICONS: Record<InstructionStatus, React.ElementType> = {
   live: Bell,
   review: MessageCircle,
@@ -385,11 +456,13 @@ const StatusSection: React.FC<StatusSectionProps> = ({
 
 interface VersionEntryCardProps {
   entry: VersionEntry;
+  onReview?: (entryId: string) => void;
 }
 
-const VersionEntryCard: React.FC<VersionEntryCardProps> = ({ entry }) => {
+const VersionEntryCard: React.FC<VersionEntryCardProps> = ({ entry, onReview }) => {
   const config = VERSION_HISTORY_CONFIG[entry.status];
   const hasAction = Boolean(config.actionLabel);
+  const isReviewAction = entry.status === 'draft' && config.actionLabel === 'Review';
 
   return (
     <article className="version-entry-card">
@@ -419,7 +492,11 @@ const VersionEntryCard: React.FC<VersionEntryCardProps> = ({ entry }) => {
             {config.badgeLabel}
           </span>
           {hasAction && (
-            <button type="button" className="version-action-btn">
+            <button
+              type="button"
+              className="version-action-btn"
+              onClick={isReviewAction ? () => onReview?.(entry.id) : undefined}
+            >
               {config.actionLabel}
             </button>
           )}
@@ -432,9 +509,14 @@ const VersionEntryCard: React.FC<VersionEntryCardProps> = ({ entry }) => {
 interface VersionHistorySectionProps {
   status: VersionHistoryStatus;
   entries: VersionEntry[];
+  onReview?: (entryId: string) => void;
 }
 
-const VersionHistorySection: React.FC<VersionHistorySectionProps> = ({ status, entries }) => {
+const VersionHistorySection: React.FC<VersionHistorySectionProps> = ({
+  status,
+  entries,
+  onReview,
+}) => {
   if (entries.length === 0) return null;
 
   const SectionIcon = HISTORY_SECTION_ICONS[status];
@@ -449,7 +531,7 @@ const VersionHistorySection: React.FC<VersionHistorySectionProps> = ({ status, e
 
       <div className="instruction-list">
         {entries.map((entry) => (
-          <VersionEntryCard key={entry.id} entry={entry} />
+          <VersionEntryCard key={entry.id} entry={entry} onReview={onReview} />
         ))}
       </div>
     </section>
@@ -613,9 +695,14 @@ const InstructionListView: React.FC<InstructionListViewProps> = ({
 interface VersionHistoryViewProps {
   instruction: Instruction;
   onBack: () => void;
+  onReview: (entryId: string) => void;
 }
 
-const VersionHistoryView: React.FC<VersionHistoryViewProps> = ({ instruction, onBack }) => {
+const VersionHistoryView: React.FC<VersionHistoryViewProps> = ({
+  instruction,
+  onBack,
+  onReview,
+}) => {
   const history = getVersionHistory(instruction.id);
 
   const groupedEntries = useMemo(() => {
@@ -654,6 +741,7 @@ const VersionHistoryView: React.FC<VersionHistoryViewProps> = ({ instruction, on
             key={group.status}
             status={group.status}
             entries={group.entries}
+            onReview={onReview}
           />
         ))}
 
@@ -663,8 +751,176 @@ const VersionHistoryView: React.FC<VersionHistoryViewProps> = ({ instruction, on
   );
 };
 
+interface PreviewStepCardProps {
+  step: PreviewStep;
+}
+
+const PreviewStepCard: React.FC<PreviewStepCardProps> = ({ step }) => {
+  if (step.type === 'visual') {
+    return (
+      <article className="review-step-card review-step-visual">
+        <div className="review-step-header">
+          <h3 className="review-step-title">{step.title}</h3>
+          {step.badge && <span className="review-step-badge">{step.badge}</span>}
+        </div>
+        <p className="review-step-content">{step.content}</p>
+        <div className="review-visual-placeholder" aria-hidden="true">
+          <div className="review-visual-inset">
+            <span className="review-visual-inset-label">4x</span>
+            <div className="review-visual-pin" />
+          </div>
+          <div className="review-visual-base">
+            <div className="review-visual-pin review-visual-pin--1" />
+            <div className="review-visual-pin review-visual-pin--2" />
+            <div className="review-visual-pin review-visual-pin--3" />
+            <div className="review-visual-pin review-visual-pin--4" />
+          </div>
+        </div>
+      </article>
+    );
+  }
+
+  return (
+    <article className={`review-step-card review-step-${step.type}`}>
+      <h3 className="review-step-title">{step.title}</h3>
+      <p className="review-step-content">{step.content}</p>
+    </article>
+  );
+};
+
+interface ReviewViewProps {
+  entry: VersionEntry;
+  onBack: () => void;
+}
+
+const ReviewView: React.FC<ReviewViewProps> = ({ entry, onBack }) => {
+  const reviewData = getReviewData(entry);
+  const [checkedItems, setCheckedItems] = useState<Record<number, boolean>>(() =>
+    reviewData.checklist.reduce(
+      (acc, _, index) => {
+        acc[index] = true;
+        return acc;
+      },
+      {} as Record<number, boolean>,
+    ),
+  );
+
+  const toggleChecklistItem = (index: number) => {
+    setCheckedItems((prev) => ({ ...prev, [index]: !prev[index] }));
+  };
+
+  return (
+    <>
+      <header className="review-header">
+        <div className="review-header-left">
+          <button type="button" className="version-back-btn" onClick={onBack}>
+            <ChevronLeft size={16} aria-hidden="true" />
+            Version History
+          </button>
+          <p className="version-history-breadcrumb">
+            /{reviewData.version} - Review
+          </p>
+        </div>
+        <span className="instruction-badge version-badge-progress">In progress</span>
+      </header>
+
+      <div className="review-layout">
+        <section className="review-preview glass-card">
+          <header className="review-section-header">
+            <span>PREVIEW</span>
+            <div className="review-legend">
+              <span className="review-legend-item">
+                <span className="review-legend-dot review-legend-dot--removed" />
+                REMOVED
+              </span>
+              <span className="review-legend-item">
+                <span className="review-legend-dot review-legend-dot--added" />
+                ADDED
+              </span>
+            </div>
+          </header>
+
+          <div className="review-steps">
+            {reviewData.previewSteps.map((step, index) => (
+              <PreviewStepCard key={`${step.title}-${index}`} step={step} />
+            ))}
+          </div>
+        </section>
+
+        <aside className="review-sidebar">
+          <section className="review-details-card glass-card">
+            <header className="review-section-header">
+              <span>VERSION DETAILS</span>
+            </header>
+
+            <dl className="review-meta-grid">
+              <div className="review-meta-item">
+                <dt>AUTHOR</dt>
+                <dd>{reviewData.author}</dd>
+              </div>
+              <div className="review-meta-item">
+                <dt>VERSION</dt>
+                <dd>{reviewData.version}</dd>
+              </div>
+              <div className="review-meta-item">
+                <dt>DATE</dt>
+                <dd>{reviewData.date}</dd>
+              </div>
+            </dl>
+
+            <textarea
+              className="review-comment"
+              readOnly
+              value={reviewData.comment}
+              aria-label="Author comment"
+            />
+          </section>
+
+          <section className="review-checklist-card glass-card">
+            <header className="review-section-header">
+              <span>CHECKLIST</span>
+            </header>
+
+            <ul className="review-checklist">
+              {reviewData.checklist.map((item, index) => (
+                <li key={item}>
+                  <label className="review-checklist-item">
+                    <input
+                      type="checkbox"
+                      checked={checkedItems[index] ?? false}
+                      onChange={() => toggleChecklistItem(index)}
+                    />
+                    <span className="review-checkbox" aria-hidden="true" />
+                    {item}
+                  </label>
+                </li>
+              ))}
+            </ul>
+
+            <div className="review-actions">
+              <button type="button" className="review-btn review-btn-reject">
+                Reject
+              </button>
+              <button type="button" className="review-btn review-btn-approve">
+                Approve {reviewData.version}
+              </button>
+            </div>
+          </section>
+        </aside>
+      </div>
+    </>
+  );
+};
+
+function findVersionEntry(instructionId: string, entryId: string): VersionEntry | undefined {
+  return getVersionHistory(instructionId).entries.find((entry) => entry.id === entryId);
+}
+
 export const Versions: React.FC = () => {
   const [selectedInstructionId, setSelectedInstructionId] = useState<string | null>(
+    null,
+  );
+  const [selectedReviewEntryId, setSelectedReviewEntryId] = useState<string | null>(
     null,
   );
 
@@ -673,12 +929,29 @@ export const Versions: React.FC = () => {
     [selectedInstructionId],
   );
 
+  const selectedReviewEntry = useMemo(() => {
+    if (!selectedInstructionId || !selectedReviewEntryId) return undefined;
+    return findVersionEntry(selectedInstructionId, selectedReviewEntryId);
+  }, [selectedInstructionId, selectedReviewEntryId]);
+
+  const handleBackFromHistory = () => {
+    setSelectedInstructionId(null);
+    setSelectedReviewEntryId(null);
+  };
+
+  const handleBackFromReview = () => {
+    setSelectedReviewEntryId(null);
+  };
+
   return (
     <div className="dashboard-container">
-      {selectedInstruction ? (
+      {selectedInstruction && selectedReviewEntry ? (
+        <ReviewView entry={selectedReviewEntry} onBack={handleBackFromReview} />
+      ) : selectedInstruction ? (
         <VersionHistoryView
           instruction={selectedInstruction}
-          onBack={() => setSelectedInstructionId(null)}
+          onBack={handleBackFromHistory}
+          onReview={setSelectedReviewEntryId}
         />
       ) : (
         <InstructionListView onSelectInstruction={setSelectedInstructionId} />
