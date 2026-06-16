@@ -245,113 +245,115 @@ const INSTRUCTIONS: Instruction[] = [
     title: 'Product T8',
     version: 'v3.3',
     author: 'Jane Larsen',
-    updatedAt: 'June 1st',
+    updatedAt: 'May 28th',
     status: 'live',
     authorInitials: 'JL',
   },
   {
     id: 'wi-2',
     title: 'Product T28',
-    version: 'v3.3',
+    version: 'v2.1',
     author: 'Jane Larsen',
-    updatedAt: 'June 1st',
+    updatedAt: 'May 20th',
     status: 'live',
     authorInitials: 'JL',
   },
   {
     id: 'wi-3',
     title: 'T10',
-    description: 'Added safety note on step 4',
+    version: 'v1.3',
+    description: 'Requires daily calibration before probe alignment',
     author: 'Marc Bakker',
     authorInitials: 'MB',
-    updatedAt: 'June 1st',
+    updatedAt: 'June 3rd',
     status: 'review',
   },
   {
     id: 'wi-4',
     title: 'T93',
-    description: 'Added safety note on step 4',
+    version: 'v0.4',
+    description: 'Initial solvent handling and dispenser workflow',
     author: 'Sara Willems',
     authorInitials: 'SW',
-    updatedAt: 'June 1st',
+    updatedAt: 'June 4th',
     status: 'draft',
   },
 ];
 
 const VERSION_HISTORY_BY_INSTRUCTION: Record<string, VersionHistory> = {
   'wi-1': {
-    totalVersions: 5,
+    totalVersions: 6,
     entries: [
       {
         id: 'v-1-live',
         version: 'v3.3',
-        description: 'Added safety note on step 4',
+        description: 'Live: bolt Y placement visuals and 4 Nm torque spec',
         author: 'Jane Larsen',
         authorInitials: 'JL',
-        updatedAt: 'June 1st',
+        updatedAt: 'May 28th',
         status: 'live',
       },
       {
         id: 'v-1-ready',
-        version: 'v3.3',
-        description: 'Added safety note on step 4',
+        version: 'v3.4',
+        description: 'Raised torque to 4.5 Nm and added traveler sign-off',
         author: 'Marc Bakker',
         authorInitials: 'MB',
-        updatedAt: 'June 1st',
+        updatedAt: 'June 2nd',
         status: 'ready-to-publish',
       },
       {
         id: 'v-1-draft',
-        version: 'v3.3',
-        description: 'Added safety note on step 4',
+        version: 'v3.5',
+        description: 'Drafting coolant line C reroute and clamp updates',
         author: 'Sara Willems',
         authorInitials: 'SW',
-        updatedAt: 'June 1st',
+        updatedAt: 'June 5th',
         status: 'draft',
       },
     ],
-    archivedVersions: ['v3.1', 'v3.2'],
+    archivedVersions: ['v3.0', 'v3.1', 'v3.2'],
   },
   'wi-2': {
     totalVersions: 3,
     entries: [
       {
         id: 'v-2-live',
-        version: 'v3.3',
-        description: 'Updated assembly sequence for T28',
+        version: 'v2.1',
+        description: 'Added bracket jig L-14 and fastener pattern visual',
         author: 'Jane Larsen',
         authorInitials: 'JL',
-        updatedAt: 'June 1st',
+        updatedAt: 'May 20th',
         status: 'live',
       },
     ],
-    archivedVersions: ['v3.0', 'v3.1'],
+    archivedVersions: ['v1.0', 'v2.0'],
   },
   'wi-3': {
-    totalVersions: 2,
+    totalVersions: 4,
     entries: [
       {
         id: 'v-3-ready',
-        version: 'v1.2',
-        description: 'Added safety note on step 4',
+        version: 'v1.3',
+        description: 'Mandatory daily calibration and probe alignment visual',
         author: 'Marc Bakker',
         authorInitials: 'MB',
-        updatedAt: 'June 1st',
+        updatedAt: 'June 3rd',
         status: 'ready-to-publish',
       },
     ],
-    archivedVersions: ['v1.0'],
+    archivedVersions: ['v1.0', 'v1.1', 'v1.2'],
   },
   'wi-4': {
     totalVersions: 1,
     entries: [
       {
         id: 'v-4-draft',
-        version: 'v0.9',
-        description: 'Added safety note on step 4',
+        version: 'v0.4',
+        description: 'First pass on graduated dispenser and SDS checklist',
         author: 'Sara Willems',
         authorInitials: 'SW',
-        updatedAt: 'June 1st',
+        updatedAt: 'June 4th',
         status: 'draft',
       },
     ],
@@ -375,32 +377,138 @@ const DEFAULT_OPERATORS_ON_SHIFT: OperatorOnShift[] = [
 ];
 
 const DEFAULT_PREVIEW_STEPS: PreviewStep[] = [
-  { type: 'normal', title: 'Step 1', content: 'Put on gloves' },
-  { type: 'normal', title: 'Step 2', content: 'Tilt the product this way' },
+  { type: 'normal', title: 'Step 1', content: 'Put on nitrile gloves and ESD wrist strap' },
+  { type: 'normal', title: 'Step 2', content: 'Mount baseplate on fixture pins A1–A4' },
   {
     type: 'removed',
     title: 'Step 3 - REMOVED',
-    content: 'Tighten bolt X',
+    content: 'Torque bolt Y to 4 Nm by feel at each corner',
   },
   {
     type: 'added',
     title: 'Step 3 - ADDED',
-    content: 'Tighten bolt Y 4x',
+    content: 'Torque bolt Y to 4.5 Nm using calibrated driver (4x)',
   },
   {
     type: 'visual',
-    title: 'Step 3 - Visual',
-    content: 'Image of 4x Y\'s placement',
+    title: 'Step 4 - Visual',
+    content: 'Bolt Y placement — 4x E020425',
+    badge: 'Visual',
+  },
+  {
+    type: 'visual',
+    title: 'Step 5 - Visual',
+    content: 'Traveler sign-off field location',
     badge: 'Visual',
   },
 ];
 
+const PREVIEW_STEPS_BY_ENTRY: Record<string, PreviewStep[]> = {
+  'v-1-live': [
+    { type: 'normal', title: 'Step 1', content: 'Put on nitrile gloves and ESD wrist strap' },
+    { type: 'normal', title: 'Step 2', content: 'Mount T8 baseplate on fixture pins A1–A4' },
+    { type: 'normal', title: 'Step 3', content: 'Torque bolt Y to 4 Nm at each corner (4x)' },
+    {
+      type: 'visual',
+      title: 'Step 4 - Visual',
+      content: 'Bolt Y placement — 4x E020425',
+      badge: 'Visual',
+    },
+    {
+      type: 'visual',
+      title: 'Step 5 - Visual',
+      content: 'Fixture pin alignment check',
+      badge: 'Visual',
+    },
+  ],
+  'v-1-ready': DEFAULT_PREVIEW_STEPS,
+  'v-1-draft': [
+    { type: 'normal', title: 'Step 1', content: 'Put on PPE for coolant service' },
+    { type: 'normal', title: 'Step 2', content: 'Depressurize and drain line C per lockout tag' },
+    {
+      type: 'visual',
+      title: 'Step 3 - Visual',
+      content: 'Coolant line C routing before reroute',
+      badge: 'Visual',
+    },
+    { type: 'normal', title: 'Step 4', content: 'Route replacement line along bulkhead path' },
+    {
+      type: 'visual',
+      title: 'Step 5 - Visual',
+      content: 'New clamp placement at bulkhead entry',
+      badge: 'Visual',
+    },
+  ],
+  'v-2-live': [
+    { type: 'normal', title: 'Step 1', content: 'Verify T28 serial on work order' },
+    { type: 'normal', title: 'Step 2', content: 'Install left bracket using jig L-14' },
+    {
+      type: 'visual',
+      title: 'Step 3 - Visual',
+      content: 'Bracket orientation on mounting rail',
+      badge: 'Visual',
+    },
+    { type: 'normal', title: 'Step 4', content: 'Secure with M6 fasteners (6x)' },
+    {
+      type: 'visual',
+      title: 'Step 5 - Visual',
+      content: 'Fastener pattern — top view',
+      badge: 'Visual',
+    },
+  ],
+  'v-3-ready': [
+    { type: 'normal', title: 'Step 1', content: 'Power down station and apply lockout tag' },
+    {
+      type: 'removed',
+      title: 'Step 2 - REMOVED',
+      content: 'Skip calibration if last run was today',
+    },
+    {
+      type: 'added',
+      title: 'Step 2 - ADDED',
+      content: 'Run full calibration routine before probe alignment',
+    },
+    { type: 'normal', title: 'Step 3', content: 'Align probe to reference plate' },
+    {
+      type: 'visual',
+      title: 'Step 4 - Visual',
+      content: 'Probe reference plate alignment',
+      badge: 'Visual',
+    },
+    {
+      type: 'added',
+      title: 'Step 5 - ADDED',
+      content: 'Add safety note: keep hands clear during auto-homing',
+    },
+  ],
+  'v-4-draft': [
+    { type: 'normal', title: 'Step 1', content: 'Review chemical SDS before handling solvent' },
+    {
+      type: 'removed',
+      title: 'Step 2 - REMOVED',
+      content: 'Pour solvent directly into bath until full',
+    },
+    {
+      type: 'added',
+      title: 'Step 2 - ADDED',
+      content: 'Use graduated dispenser to the 200 ml mark',
+    },
+    {
+      type: 'visual',
+      title: 'Step 3 - Visual',
+      content: 'Dispenser fill level marker',
+      badge: 'Visual',
+    },
+    { type: 'normal', title: 'Step 4', content: 'Wipe station dry before next batch' },
+  ],
+};
+
 const DEFAULT_REVIEW_DATA: ReviewData = {
-  author: 'Jane Larsen',
-  version: 'v3.3',
-  date: 'June 1st',
+  author: 'Sara Willems',
+  version: 'v3.5',
+  date: 'June 5th',
   comment:
-    'I added visuals for step 4 and replaced the text with more active wording.',
+    'Coolant reroute needs clearer clamp torque callout. Added two visuals for line C and bulkhead entry.',
   checklist: [
     'Technically accurate and safe to follow',
     'Clear and correct visuals',
@@ -410,11 +518,11 @@ const DEFAULT_REVIEW_DATA: ReviewData = {
 };
 
 const DEFAULT_PUBLISH_DATA: PublishData = {
-  author: 'Jane Larsen',
-  version: 'v3.3',
-  date: 'June 1st',
+  author: 'Marc Bakker',
+  version: 'v3.4',
+  date: 'June 2nd',
   comment:
-    'I added visuals for step 4 and replaced the text with more active wording.',
+    'Raised bolt Y torque to 4.5 Nm after gauge audit. Traveler sign-off visual added at step 5.',
   previewSteps: DEFAULT_PREVIEW_STEPS,
   operatorsOnShift: DEFAULT_OPERATORS_ON_SHIFT,
 };
@@ -426,67 +534,122 @@ const DEFAULT_REJECTION_FEEDBACK: RejectionFeedback = {
   role: 'Reviewer',
   tags: ['Technically incorrect', 'Incomplete'],
   feedback:
-    'Step 4 needs a clear next step, other wise they\'ll improvise. Also rephrase the language...',
+    'Step 4 needs a clear next step, otherwise they\'ll improvise. Also rephrase the language...',
 };
 
 const DEFAULT_REJECTION_DATA: RejectionData = {
-  author: 'Jane Larsen',
-  version: 'v3.3',
-  date: 'June 1st',
+  author: 'Marc Bakker',
+  version: 'v3.4',
+  date: 'June 2nd',
   comment:
-    'I added visuals for step 4 and replaced the text with more active wording.',
+    'Raised bolt Y torque to 4.5 Nm after gauge audit. Traveler sign-off visual added at step 5.',
   previewSteps: DEFAULT_PREVIEW_STEPS,
   rejectionFeedback: DEFAULT_REJECTION_FEEDBACK,
 };
 
 const REVIEW_DATA_BY_ENTRY: Record<string, ReviewData> = {
-  'v-1-draft': DEFAULT_REVIEW_DATA,
-  'v-4-draft': {
-    ...DEFAULT_REVIEW_DATA,
+  'v-1-draft': {
     author: 'Sara Willems',
-    version: 'v0.9',
+    version: 'v3.5',
+    date: 'June 5th',
+    comment:
+      'Coolant reroute needs clearer clamp torque callout. Added two visuals for line C and bulkhead entry.',
+    checklist: DEFAULT_REVIEW_DATA.checklist,
+    previewSteps: PREVIEW_STEPS_BY_ENTRY['v-1-draft'],
+  },
+  'v-4-draft': {
+    author: 'Sara Willems',
+    version: 'v0.4',
+    date: 'June 4th',
+    comment:
+      'First draft of dispenser workflow. Needs review on SDS step order and fill-level visual.',
+    checklist: DEFAULT_REVIEW_DATA.checklist,
+    previewSteps: PREVIEW_STEPS_BY_ENTRY['v-4-draft'],
   },
 };
 
 const PUBLISH_DATA_BY_ENTRY: Record<string, PublishData> = {
-  'v-1-ready': DEFAULT_PUBLISH_DATA,
-  'v-3-ready': {
-    ...DEFAULT_PUBLISH_DATA,
+  'v-1-ready': {
     author: 'Marc Bakker',
-    version: 'v1.2',
+    version: 'v3.4',
+    date: 'June 2nd',
+    comment:
+      'Raised bolt Y torque to 4.5 Nm after gauge audit. Traveler sign-off visual added at step 5.',
+    previewSteps: PREVIEW_STEPS_BY_ENTRY['v-1-ready'],
+    operatorsOnShift: DEFAULT_OPERATORS_ON_SHIFT,
+  },
+  'v-3-ready': {
+    author: 'Marc Bakker',
+    version: 'v1.3',
+    date: 'June 3rd',
+    comment:
+      'Calibration can no longer be skipped between shifts. Probe alignment visual updated.',
+    previewSteps: PREVIEW_STEPS_BY_ENTRY['v-3-ready'],
+    operatorsOnShift: [
+      { id: 'op-3', name: 'Stefan Witlox', initials: 'SW', assignment: 'Triage T-10' },
+    ],
   },
 };
 
+function getPreviewStepsForEntry(entry: VersionEntry): PreviewStep[] {
+  return PREVIEW_STEPS_BY_ENTRY[entry.id] ?? DEFAULT_PREVIEW_STEPS;
+}
+
+function findInstructionIdForEntry(entryId: string): string | undefined {
+  return Object.entries(VERSION_HISTORY_BY_INSTRUCTION).find(([, history]) =>
+    history.entries.some((entry) => entry.id === entryId),
+  )?.[0];
+}
+
+function getLiveVersionForInstruction(instructionId: string): string | undefined {
+  const liveEntry = getVersionHistory(instructionId).entries.find(
+    (entry) => entry.status === 'live',
+  );
+  return liveEntry?.version;
+}
+
 function getReviewData(entry: VersionEntry): ReviewData {
-  return (
+  const data =
     REVIEW_DATA_BY_ENTRY[entry.id] ?? {
       ...DEFAULT_REVIEW_DATA,
       author: entry.author,
       version: entry.version,
       date: entry.updatedAt,
-    }
-  );
+    };
+
+  return {
+    ...data,
+    previewSteps: data.previewSteps ?? getPreviewStepsForEntry(entry),
+  };
 }
 
 function getPublishData(entry: VersionEntry): PublishData {
-  return (
+  const data =
     PUBLISH_DATA_BY_ENTRY[entry.id] ?? {
       ...DEFAULT_PUBLISH_DATA,
       author: entry.author,
       version: entry.version,
       date: entry.updatedAt,
-    }
-  );
+    };
+
+  return {
+    ...data,
+    previewSteps: data.previewSteps ?? getPreviewStepsForEntry(entry),
+  };
 }
 
 function getPublishConfirmDetails(
   entry: VersionEntry,
   publishData: PublishData,
 ): PublishConfirmDetails {
+  const instructionId = findInstructionIdForEntry(entry.id);
+  const replacingVersion =
+    (instructionId && getLiveVersionForInstruction(instructionId)) ?? 'v3.2';
+
   return {
     publishingVersion: entry.version,
     publisherName: entry.author.split(' ')[0] ?? entry.author,
-    replacingVersion: 'v3.2',
+    replacingVersion,
     approvedBy: 'Stefan',
     approvedDate: 'June 3rd',
     affectedOperators: publishData.operatorsOnShift.map((operator) => operator.name),
@@ -499,6 +662,7 @@ function getRejectionData(entry: VersionEntry): RejectionData {
     author: entry.author,
     version: entry.version,
     date: entry.updatedAt,
+    previewSteps: getPreviewStepsForEntry(entry),
   };
 }
 
@@ -1053,6 +1217,14 @@ const PreviewPanel: React.FC<PreviewPanelProps> = ({ previewSteps }) => (
   </section>
 );
 
+interface WorkflowActionBarProps {
+  children: React.ReactNode;
+}
+
+const WorkflowActionBar: React.FC<WorkflowActionBarProps> = ({ children }) => (
+  <div className="workflow-sidebar-actions">{children}</div>
+);
+
 interface OperatorImpactSectionProps {
   operators: OperatorOnShift[];
 }
@@ -1434,53 +1606,55 @@ const ReviewView: React.FC<ReviewViewProps> = ({
         <PreviewPanel previewSteps={reviewData.previewSteps} />
 
         <aside className="review-sidebar">
-          <VersionDetailsCard
-            author={reviewData.author}
-            version={reviewData.version}
-            date={reviewData.date}
-            comment={reviewData.comment}
-          />
+          <div className="review-sidebar-content">
+            <VersionDetailsCard
+              author={reviewData.author}
+              version={reviewData.version}
+              date={reviewData.date}
+              comment={reviewData.comment}
+            />
 
-          <section className="review-checklist-card glass-card">
-            <header className="review-section-header">
-              <span>CHECKLIST</span>
-            </header>
+            <section className="review-checklist-card glass-card">
+              <header className="review-section-header">
+                <span>CHECKLIST</span>
+              </header>
 
-            <ul className="review-checklist">
-              {reviewData.checklist.map((item, index) => (
-                <li key={item}>
-                  <label className="review-checklist-item">
-                    <input
-                      type="checkbox"
-                      checked={checkedItems[index] ?? false}
-                      onChange={() => toggleChecklistItem(index)}
-                    />
-                    <span className="review-checkbox" aria-hidden="true" />
-                    {item}
-                  </label>
-                </li>
-              ))}
-            </ul>
-          </section>
+              <ul className="review-checklist">
+                {reviewData.checklist.map((item, index) => (
+                  <li key={item}>
+                    <label className="review-checklist-item">
+                      <input
+                        type="checkbox"
+                        checked={checkedItems[index] ?? false}
+                        onChange={() => toggleChecklistItem(index)}
+                      />
+                      <span className="review-checkbox" aria-hidden="true" />
+                      {item}
+                    </label>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          </div>
+
+          <WorkflowActionBar>
+            <button
+              type="button"
+              className="review-btn review-btn-reject"
+              onClick={onOpenRejectModal}
+            >
+              Reject
+            </button>
+            <button
+              type="button"
+              className="review-btn review-btn-approve"
+              disabled={!isApproveEnabled}
+              onClick={onApprove}
+            >
+              Approve {reviewData.version}
+            </button>
+          </WorkflowActionBar>
         </aside>
-      </div>
-
-      <div className="review-actions">
-        <button
-          type="button"
-          className="review-btn review-btn-reject"
-          onClick={onOpenRejectModal}
-        >
-          Reject
-        </button>
-        <button
-          type="button"
-          className="review-btn review-btn-approve"
-          disabled={!isApproveEnabled}
-          onClick={onApprove}
-        >
-          Approve {reviewData.version}
-        </button>
       </div>
     </div>
   );
@@ -1527,32 +1701,34 @@ const PublishView: React.FC<PublishViewProps> = ({
         <PreviewPanel previewSteps={publishData.previewSteps} />
 
         <aside className="review-sidebar">
-          <VersionDetailsCard
-            author={publishData.author}
-            version={publishData.version}
-            date={publishData.date}
-            comment={publishData.comment}
-          />
+          <div className="review-sidebar-content">
+            <VersionDetailsCard
+              author={publishData.author}
+              version={publishData.version}
+              date={publishData.date}
+              comment={publishData.comment}
+            />
 
-          <OperatorImpactSection operators={publishData.operatorsOnShift} />
+            <OperatorImpactSection operators={publishData.operatorsOnShift} />
+          </div>
+
+          <WorkflowActionBar>
+            <button
+              type="button"
+              className="review-btn review-btn-reject"
+              onClick={onOpenRejectModal}
+            >
+              Reject
+            </button>
+            <button
+              type="button"
+              className="review-btn review-btn-approve"
+              onClick={() => setIsPublishModalOpen(true)}
+            >
+              Publish {publishData.version}
+            </button>
+          </WorkflowActionBar>
         </aside>
-      </div>
-
-      <div className="review-actions">
-        <button
-          type="button"
-          className="review-btn review-btn-reject"
-          onClick={onOpenRejectModal}
-        >
-          Reject
-        </button>
-        <button
-          type="button"
-          className="review-btn review-btn-approve"
-          onClick={() => setIsPublishModalOpen(true)}
-        >
-          Publish {publishData.version}
-        </button>
       </div>
 
       {isPublishModalOpen && (
@@ -1607,24 +1783,34 @@ const RejectionView: React.FC<RejectionViewProps> = ({
         <PreviewPanel previewSteps={rejectionData.previewSteps} />
 
         <aside className="review-sidebar">
-          <VersionDetailsCard
-            author={rejectionData.author}
-            version={rejectionData.version}
-            date={rejectionData.date}
-            comment={rejectionData.comment}
-          />
+          <div className="review-sidebar-content">
+            <VersionDetailsCard
+              author={rejectionData.author}
+              version={rejectionData.version}
+              date={rejectionData.date}
+              comment={rejectionData.comment}
+            />
 
-          <RejectionFeedbackSection feedback={rejectionFeedback} />
+            <RejectionFeedbackSection feedback={rejectionFeedback} />
+          </div>
+
+          <WorkflowActionBar>
+            <button
+              type="button"
+              className="rejection-btn rejection-btn-secondary"
+              onClick={onViewHistory}
+            >
+              View history
+            </button>
+            <button
+              type="button"
+              className="rejection-btn rejection-btn-primary"
+              onClick={onGoToBuilder}
+            >
+              Go to builder
+            </button>
+          </WorkflowActionBar>
         </aside>
-      </div>
-
-      <div className="rejection-actions">
-        <button type="button" className="rejection-btn rejection-btn-secondary" onClick={onViewHistory}>
-          View history
-        </button>
-        <button type="button" className="rejection-btn rejection-btn-primary" onClick={onGoToBuilder}>
-          Go to builder
-        </button>
       </div>
     </div>
   );
