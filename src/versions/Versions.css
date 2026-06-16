@@ -1,9 +1,9 @@
 /*
  * Versions.css
  *
- * Styles for the Work Instruction Versions page.
- * Section order matches Versions.tsx:
- *   Instruction list → Version history → Review/Publish/Rejection → Modals → Toasts
+ * Styles for the Work Instruction Versions flow (src/versions/).
+ * Screen order:
+ *   Instruction list → Version history → Review / Publish / Rejection → Modals → Toasts
  */
 
 /* --- Instruction list (home screen) --- */

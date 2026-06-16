@@ -1,3 +1,6 @@
+/**
+ * Main instruction list — search, filters, and status-grouped cards.
+ */
 import React, { useMemo, useState } from 'react';
 import { ChevronRight, FileText, Search } from 'lucide-react';
 import { FILTER_OPTIONS, STATUS_CONFIG, STATUS_ORDER } from '../constants';
@@ -69,6 +72,7 @@ export interface StatusSectionProps {
   onSelectInstruction: (instructionId: string) => void;
 }
 
+/** One status group (LIVE, REVIEW, or DRAFT) containing its instruction cards. */
 export const StatusSection: React.FC<StatusSectionProps> = ({
   status,
   instructions,
@@ -123,6 +127,7 @@ export const InstructionListView: React.FC<InstructionListViewProps> = ({
   );
 
   const groupedInstructions = useMemo(() => {
+    // Bucket filtered rows by status, preserving STATUS_ORDER for display
     const groups = STATUS_ORDER.reduce(
       (acc, status) => {
         acc[status] = filteredInstructions.filter(

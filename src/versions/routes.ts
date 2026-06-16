@@ -1,4 +1,12 @@
-/** URL paths for the Versions section and Instruction Builder deep links. */
+/**
+ * URL helpers for the Versions section and Instruction Builder deep links.
+ *
+ * Examples:
+ *   /versions                          → instruction list
+ *   /versions/wi-1                     → version history
+ *   /versions/wi-1/review/v-1-draft    → review workflow
+ *   /all-instructions/wi-1/v-1-draft → builder
+ */
 
 export type VersionsWorkflowAction = 'review' | 'publish' | 'rejection' | 'view';
 
@@ -27,6 +35,7 @@ export function builderPath(instructionId: string, entryId?: string): string {
     : `/all-instructions/${instructionId}`;
 }
 
+/** Parse /versions/... segments into instruction, workflow action, and entry id. */
 export function parseVersionsPath(pathname: string): {
   instructionId?: string;
   action?: VersionsWorkflowAction;
@@ -64,6 +73,7 @@ export function parseVersionsPath(pathname: string): {
   return { instructionId, action, entryId };
 }
 
+/** Parse /all-instructions/... for the Instruction Builder route. */
 export function parseBuilderPath(pathname: string): {
   instructionId?: string;
   entryId?: string;

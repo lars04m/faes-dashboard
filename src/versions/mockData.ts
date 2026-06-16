@@ -1,3 +1,10 @@
+/**
+ * Mock data for the Work Instruction Versions flow.
+ *
+ * Each instruction (wi-*) has a matching entry in INITIAL_VERSION_HISTORY.
+ * Entry ids (v-*-live, v-*-ready, etc.) link to PREVIEW_STEPS_BY_ENTRY and,
+ * where applicable, REVIEW_DATA_BY_ENTRY / PUBLISH_DATA_BY_ENTRY.
+ */
 import type {
   Instruction,
   OperatorOnShift,
@@ -11,8 +18,14 @@ import type {
   VersionsDataState,
 } from './types';
 
+// ---------------------------------------------------------------------------
+// Instruction list (main screen cards)
+// Status on each row mirrors the "primary" entry in that instruction's history.
+// ---------------------------------------------------------------------------
+
 /** All work instructions shown on the main list screen. */
 export const INITIAL_INSTRUCTIONS: Instruction[] = [
+  // --- Live ---
   {
     id: 'wi-1',
     title: 'Product T8',
@@ -31,6 +44,7 @@ export const INITIAL_INSTRUCTIONS: Instruction[] = [
     status: 'live',
     authorInitials: 'JL',
   },
+  // --- Review (ready-to-publish) ---
   {
     id: 'wi-3',
     title: 'T10',
@@ -41,6 +55,7 @@ export const INITIAL_INSTRUCTIONS: Instruction[] = [
     updatedAt: 'June 3rd',
     status: 'review',
   },
+  // --- Draft ---
   {
     id: 'wi-4',
     title: 'T93',
@@ -51,6 +66,7 @@ export const INITIAL_INSTRUCTIONS: Instruction[] = [
     updatedAt: 'June 4th',
     status: 'draft',
   },
+  // --- Additional live ---
   {
     id: 'wi-5',
     title: 'Product T12',
@@ -71,6 +87,7 @@ export const INITIAL_INSTRUCTIONS: Instruction[] = [
     updatedAt: 'May 30th',
     status: 'live',
   },
+  // --- Additional review ---
   {
     id: 'wi-7',
     title: 'T22',
@@ -123,8 +140,15 @@ function createArchivedEntry(
   };
 }
 
+// ---------------------------------------------------------------------------
+// Version history (per-instruction detail screen)
+// entries = active rows (live, draft, ready-to-publish, rejected)
+// archivedEntries = superseded versions opened via read-only preview
+// ---------------------------------------------------------------------------
+
 /** Version history entries keyed by instruction id (wi-1, wi-2, …). */
 export const INITIAL_VERSION_HISTORY: Record<string, VersionHistory> = {
+  // Product T8 — richest history: live + ready + draft + 3 archived
   'wi-1': {
     totalVersions: 6,
     entries: [
@@ -270,6 +294,7 @@ export const INITIAL_VERSION_HISTORY: Record<string, VersionHistory> = {
     ],
     archivedEntries: [],
   },
+  // Product T12 — live only, one archived predecessor
   'wi-5': {
     totalVersions: 2,
     entries: [
@@ -318,6 +343,7 @@ export const INITIAL_VERSION_HISTORY: Record<string, VersionHistory> = {
       ),
     ],
   },
+  // T22 — awaiting publish (ready-to-publish)
   'wi-7': {
     totalVersions: 2,
     entries: [
@@ -400,19 +426,24 @@ export const INITIAL_VERSION_HISTORY: Record<string, VersionHistory> = {
   },
 };
 
-/** Pre-filled review notes for versions already approved before the session started. */
+/** Seed review notes from PUBLISH_DATA so pre-approved entries show text on Publish. */
 export function createInitialReviewComments(): Record<string, string> {
   return Object.fromEntries(
     Object.entries(PUBLISH_DATA_BY_ENTRY).map(([entryId, data]) => [entryId, data.comment]),
   );
 }
 
+/** Deep-cloned snapshot used to reset VersionsProvider state on mount. */
 export function createInitialVersionsData(): VersionsDataState {
   return {
     instructions: structuredClone(INITIAL_INSTRUCTIONS),
     versionHistoryByInstruction: structuredClone(INITIAL_VERSION_HISTORY),
   };
 }
+
+// ---------------------------------------------------------------------------
+// Workflow screen defaults and per-entry overrides
+// ---------------------------------------------------------------------------
 
 /** Default operators shown on the Publish screen for Product T8. */
 export const DEFAULT_OPERATORS_ON_SHIFT: OperatorOnShift[] = [
@@ -627,6 +658,7 @@ export const PREVIEW_STEPS_BY_ENTRY: Record<string, PreviewStep[]> = {
   ],
 };
 
+/** Fallback when REVIEW_DATA_BY_ENTRY has no override for a draft entry. */
 export const DEFAULT_REVIEW_DATA: ReviewData = {
   author: 'Sara Willems',
   version: 'v3.5',
@@ -640,6 +672,7 @@ export const DEFAULT_REVIEW_DATA: ReviewData = {
   previewSteps: DEFAULT_PREVIEW_STEPS,
 };
 
+/** Fallback when PUBLISH_DATA_BY_ENTRY has no override for a ready entry. */
 export const DEFAULT_PUBLISH_DATA: PublishData = {
   author: 'Marc Bakker',
   version: 'v3.4',
@@ -650,6 +683,7 @@ export const DEFAULT_PUBLISH_DATA: PublishData = {
   operatorsOnShift: DEFAULT_OPERATORS_ON_SHIFT,
 };
 
+/** Sample reviewer feedback merged into the Rejection screen sidebar. */
 export const DEFAULT_REJECTION_FEEDBACK: RejectionFeedback = {
   reviewerName: 'Stefan Witlox',
   reviewerInitials: 'SW',
@@ -660,6 +694,7 @@ export const DEFAULT_REJECTION_FEEDBACK: RejectionFeedback = {
     'Step 4 needs a clear next step, otherwise they\'ll improvise. Also rephrase the language...',
 };
 
+/** Base rejection screen content; actual feedback comes from the reject modal. */
 export const DEFAULT_REJECTION_DATA: RejectionData = {
   author: 'Marc Bakker',
   version: 'v3.4',

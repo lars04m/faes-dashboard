@@ -1,4 +1,6 @@
-// Version control domain types
+// Domain types for the Work Instruction Versions flow.
+// Instruction = list card; VersionEntry = one row in history; workflow screens
+// consume ReviewData / PublishData / RejectionData built from mock overrides.
 
 export type InstructionStatus = 'live' | 'review' | 'draft';
 export type StatusFilter = 'all' | InstructionStatus;

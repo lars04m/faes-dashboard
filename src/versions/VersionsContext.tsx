@@ -1,3 +1,7 @@
+/**
+ * Shared app state for the Versions section and Instruction Builder.
+ * Wraps the dashboard so toasts survive navigation to the builder.
+ */
 import React, {
   createContext,
   useCallback,
@@ -55,18 +59,23 @@ interface VersionsContextValue {
 const VersionsContext = createContext<VersionsContextValue | null>(null);
 
 export function VersionsProvider({ children }: { children: ReactNode }) {
+  // Core data: instruction list + per-instruction version histories
   const [versionsData, setVersionsData] = useState<VersionsDataState>(
     createInitialVersionsData,
   );
+  // Set when user opens a rejected draft in the Instruction Builder
   const [builderSelection, setBuilderSelection] = useState<BuilderSelection | null>(
     null,
   );
+  // Reject-modal payload keyed by version entry id (shown on Rejection screen)
   const [rejectionSubmissions, setRejectionSubmissions] = useState<
     Record<string, RejectionSubmission>
   >({});
+  // Review notes saved on Approve; pre-seeded for entries already approved in mock data
   const [reviewCommentsByEntryId, setReviewCommentsByEntryId] = useState<
     Record<string, string>
   >(createInitialReviewComments);
+  // Global toast rendered at provider level so it persists across route changes
   const [actionToast, setActionToast] = useState<ActionToastState | null>(null);
 
   const showActionToast = useCallback(
@@ -96,6 +105,7 @@ export function VersionsProvider({ children }: { children: ReactNode }) {
         const current = prev.versionHistoryByInstruction[instructionId];
         if (!current) return prev;
 
+        // Shallow-copy arrays so updaters can mutate safely
         const nextHistory = updater({
           ...current,
           entries: [...current.entries],
@@ -116,6 +126,7 @@ export function VersionsProvider({ children }: { children: ReactNode }) {
     [],
   );
 
+  // Sidebar badge: count draft entries awaiting review across all instructions
   const pendingReviewCount = useMemo(
     () =>
       Object.values(versionsData.versionHistoryByInstruction).reduce(

@@ -1,3 +1,7 @@
+/**
+ * Pure helpers for the Versions module.
+ * Lookup, list-card sync, and building Review/Publish/Rejection screen data.
+ */
 import type {
   Instruction,
   InstructionStatus,
@@ -85,6 +89,7 @@ export function deriveInstructionFromHistory(
   let status: InstructionStatus;
   let primary: VersionEntry | undefined;
 
+  // Priority: live > ready-to-publish (shown as "review" on list) > draft > rejected
   if (liveEntry) {
     status = 'live';
     primary = liveEntry;
@@ -95,6 +100,7 @@ export function deriveInstructionFromHistory(
     status = 'draft';
     primary = draftEntry;
   } else if (rejectedEntry) {
+    // Rejected drafts still appear under the DRAFT section on the main list
     status = 'draft';
     primary = rejectedEntry;
   } else {
@@ -111,6 +117,7 @@ export function deriveInstructionFromHistory(
   };
 }
 
+/** Re-derive the list card for one instruction after its history mutates. */
 export function syncInstructionInState(
   state: VersionsDataState,
   instructionId: string,
@@ -168,6 +175,7 @@ export function getReviewData(entry: VersionEntry): ReviewData {
 
   return {
     ...data,
+    // Review screen always starts with an empty notes field
     comment: '',
     previewSteps: data.previewSteps ?? getPreviewStepsForEntry(entry),
   };

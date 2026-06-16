@@ -1,3 +1,10 @@
+/**
+ * Top-level Versions router.
+ *
+ * URL shape: /versions → list
+ *            /versions/:instructionId → history
+ *            /versions/:instructionId/{review|publish|rejection|view}/:entryId → workflow
+ */
 import React, { useMemo, useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { InstructionListView } from './components/InstructionListView';
@@ -39,6 +46,7 @@ export const VersionsPage: React.FC = () => {
   const { instructionId, action, entryId } = parseVersionsPath(location.pathname);
   const { instructions, versionHistoryByInstruction } = versionsData;
 
+  // Reject modal is local UI state; submission is stored in context
   const [rejectModalEntryId, setRejectModalEntryId] = useState<string | null>(null);
 
   const selectedInstruction = useMemo(
@@ -78,6 +86,8 @@ export const VersionsPage: React.FC = () => {
       ['review', 'publish', 'rejection', 'view'].includes(action),
   );
 
+  // --- Route guards: redirect to a safe parent when URL params are invalid ---
+
   if (instructionId && !selectedInstruction) {
     return <Navigate to="/versions" replace />;
   }
@@ -87,8 +97,11 @@ export const VersionsPage: React.FC = () => {
   }
 
   if (instructionId && action === 'rejection' && entryId && !getRejectionSubmission(entryId)) {
+    // Rejection screen requires prior reject-modal submission
     return <Navigate to={`/versions/${instructionId}`} replace />;
   }
+
+  // --- Workflow side effects (approve, publish, reject, open builder) ---
 
   const handleOpenRejectModal = (modalEntryId: string) => {
     setRejectModalEntryId(modalEntryId);
@@ -130,6 +143,7 @@ export const VersionsPage: React.FC = () => {
       );
       let archivedEntries = [...history.archivedEntries];
 
+      // Demote the previous live version into archivedEntries
       if (liveEntry && liveEntry.id !== publishingEntryId) {
         entries = entries.filter((entry) => entry.id !== liveEntry.id);
         archivedEntries = [liveEntry, ...archivedEntries];
@@ -177,6 +191,7 @@ export const VersionsPage: React.FC = () => {
   };
 
   const renderContent = () => {
+    // Most specific routes first; fall through to list when no match
     if (selectedInstruction && action === 'rejection' && selectedEntry && rejectionSubmission) {
       return (
         <RejectionView
@@ -269,6 +284,7 @@ export const VersionsPage: React.FC = () => {
 
   return (
     <div
+      // Fixed-height layout for workflow screens (preview scrolls, sidebar stays put)
       className={`dashboard-container${isWorkflowView ? ' dashboard-container--review' : ''}`}
     >
       {renderContent()}

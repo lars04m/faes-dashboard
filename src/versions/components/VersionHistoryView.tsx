@@ -1,3 +1,7 @@
+/**
+ * Version history for a single work instruction.
+ * Active entries grouped by status; archived versions in a collapsible panel.
+ */
 import React, { useMemo, useState } from 'react';
 import { Archive, ChevronLeft, ChevronRight } from 'lucide-react';
 import { VERSION_HISTORY_CONFIG, VERSION_HISTORY_ORDER } from '../constants';
@@ -11,6 +15,7 @@ export interface VersionEntryCardProps {
   onView?: (entryId: string) => void;
 }
 
+/** Single version row with status badge and optional Review / Publish / View action. */
 export const VersionEntryCard: React.FC<VersionEntryCardProps> = ({
   entry,
   onReview,
@@ -95,6 +100,7 @@ export interface VersionHistorySectionProps {
   onView?: (entryId: string) => void;
 }
 
+/** Group of version rows sharing the same status (e.g. LIVE, DRAFT). */
 export const VersionHistorySection: React.FC<VersionHistorySectionProps> = ({
   status,
   entries,
@@ -134,6 +140,7 @@ export interface ArchivedSectionProps {
   onViewEntry: (entryId: string) => void;
 }
 
+/** Collapsible panel listing superseded versions; each opens read-only preview. */
 export const ArchivedSection: React.FC<ArchivedSectionProps> = ({
   archivedEntries,
   onViewEntry,

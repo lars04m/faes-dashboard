@@ -34,6 +34,7 @@ export function useVersionsNavigation() {
     [navigate],
   );
 
+  // Convenience wrappers for each workflow action
   const goToReview = useCallback(
     (instructionId: string, entryId: string) => {
       goToWorkflow(instructionId, 'review', entryId);

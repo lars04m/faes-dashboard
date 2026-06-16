@@ -1,3 +1,7 @@
+/**
+ * Review, Publish, Rejection workflow screens and their shared building blocks.
+ * Layout: scrollable preview (left) + fixed sidebar (right).
+ */
 import React, { useMemo, useState } from 'react';
 import { ChevronLeft, X } from 'lucide-react';
 import stepVisualImage from '../../assets/image-1.png';

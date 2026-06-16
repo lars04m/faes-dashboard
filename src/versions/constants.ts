@@ -1,3 +1,7 @@
+/**
+ * Display constants: section order, badge labels, and filter pills.
+ * Kept separate from mock data so UI config is easy to scan.
+ */
 import type { InstructionStatus, StatusFilter, VersionHistoryStatus } from './types';
 
 /** Display order for status groups on the instruction list. */
