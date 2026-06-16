@@ -10,6 +10,7 @@ import {
   CheckCircle2,
   Archive,
 } from 'lucide-react';
+import stepVisualImage from '../assets/image-1.png';
 import './Versions.css';
 
 type InstructionStatus = 'live' | 'review' | 'draft';
@@ -764,18 +765,11 @@ const PreviewStepCard: React.FC<PreviewStepCardProps> = ({ step }) => {
           {step.badge && <span className="review-step-badge">{step.badge}</span>}
         </div>
         <p className="review-step-content">{step.content}</p>
-        <div className="review-visual-placeholder" aria-hidden="true">
-          <div className="review-visual-inset">
-            <span className="review-visual-inset-label">4x</span>
-            <div className="review-visual-pin" />
-          </div>
-          <div className="review-visual-base">
-            <div className="review-visual-pin review-visual-pin--1" />
-            <div className="review-visual-pin review-visual-pin--2" />
-            <div className="review-visual-pin review-visual-pin--3" />
-            <div className="review-visual-pin review-visual-pin--4" />
-          </div>
-        </div>
+        <img
+          className="review-visual-image"
+          src={stepVisualImage}
+          alt="Assembly diagram showing 4x E020425 cylinder placement"
+        />
       </article>
     );
   }
@@ -795,22 +789,19 @@ interface ReviewViewProps {
 
 const ReviewView: React.FC<ReviewViewProps> = ({ entry, onBack }) => {
   const reviewData = getReviewData(entry);
-  const [checkedItems, setCheckedItems] = useState<Record<number, boolean>>(() =>
-    reviewData.checklist.reduce(
-      (acc, _, index) => {
-        acc[index] = true;
-        return acc;
-      },
-      {} as Record<number, boolean>,
-    ),
-  );
+  const [checkedItems, setCheckedItems] = useState<Record<number, boolean>>({});
 
   const toggleChecklistItem = (index: number) => {
     setCheckedItems((prev) => ({ ...prev, [index]: !prev[index] }));
   };
 
+  const isApproveEnabled = useMemo(
+    () => reviewData.checklist.every((_, index) => checkedItems[index] === true),
+    [reviewData.checklist, checkedItems],
+  );
+
   return (
-    <>
+    <div className="review-page">
       <header className="review-header">
         <div className="review-header-left">
           <button type="button" className="version-back-btn" onClick={onBack}>
@@ -896,19 +887,23 @@ const ReviewView: React.FC<ReviewViewProps> = ({ entry, onBack }) => {
                 </li>
               ))}
             </ul>
-
-            <div className="review-actions">
-              <button type="button" className="review-btn review-btn-reject">
-                Reject
-              </button>
-              <button type="button" className="review-btn review-btn-approve">
-                Approve {reviewData.version}
-              </button>
-            </div>
           </section>
         </aside>
       </div>
-    </>
+
+      <div className="review-actions">
+        <button type="button" className="review-btn review-btn-reject">
+          Reject
+        </button>
+        <button
+          type="button"
+          className="review-btn review-btn-approve"
+          disabled={!isApproveEnabled}
+        >
+          Approve {reviewData.version}
+        </button>
+      </div>
+    </div>
   );
 };
 
@@ -944,7 +939,11 @@ export const Versions: React.FC = () => {
   };
 
   return (
-    <div className="dashboard-container">
+    <div
+      className={`dashboard-container${
+        selectedInstruction && selectedReviewEntry ? ' dashboard-container--review' : ''
+      }`}
+    >
       {selectedInstruction && selectedReviewEntry ? (
         <ReviewView entry={selectedReviewEntry} onBack={handleBackFromReview} />
       ) : selectedInstruction ? (
