@@ -217,6 +217,213 @@
   font-size: 0.9rem;
 }
 
+/* Version History detail */
+.version-history-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.version-back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.5rem 0.85rem;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background-color: var(--bg-secondary);
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.version-back-btn:hover {
+  background-color: var(--bg-tertiary);
+  border-color: #cbd5e1;
+  color: var(--text-primary);
+}
+
+.version-history-breadcrumb {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.version-entry-card {
+  position: relative;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+.version-entry-body {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 1rem 1.15rem 1rem 1.25rem;
+}
+
+.version-avatar {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.version-avatar-live {
+  background-color: var(--color-success-bg);
+  color: var(--color-success);
+}
+
+.version-avatar-ready {
+  background-color: var(--color-info-bg);
+  color: var(--color-info);
+}
+
+.version-avatar-draft {
+  background-color: var(--bg-tertiary);
+  color: var(--text-secondary);
+}
+
+.version-entry-details {
+  flex: 1;
+  min-width: 0;
+}
+
+.version-entry-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.45rem;
+  line-height: 1.35;
+}
+
+.version-entry-version {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.version-entry-description {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+.version-entry-meta {
+  margin-top: 0.2rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--brand-navy);
+}
+
+.version-entry-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.version-badge-approved {
+  background-color: var(--color-info-bg);
+  color: var(--color-info);
+}
+
+.version-badge-progress {
+  background-color: var(--color-warning-bg);
+  color: #92400e;
+}
+
+.version-action-btn {
+  padding: 0.35rem 0.85rem;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.version-action-btn:hover {
+  background-color: var(--bg-tertiary);
+  border-color: #cbd5e1;
+}
+
+.version-archived-panel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  width: 100%;
+  padding: 1rem 1.15rem;
+  border: 1px dashed var(--border-color);
+  border-radius: 10px;
+  background-color: var(--bg-secondary);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.version-archived-panel:hover {
+  border-color: #cbd5e1;
+  background-color: var(--bg-tertiary);
+}
+
+.version-archived-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.version-archived-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.version-archived-tag {
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  background-color: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.version-archived-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--brand-navy);
+}
+
+.version-archived-list {
+  list-style: none;
+  margin-top: 0.65rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background-color: var(--bg-tertiary);
+}
+
+.version-archived-list-item {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  padding: 0.25rem 0;
+}
+
 .env-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
