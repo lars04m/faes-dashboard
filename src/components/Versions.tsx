@@ -5,7 +5,7 @@ export const Versions: React.FC = () => {
     <div className="dashboard-container">
       <div className="dashboard-header">
         <div>
-          <h1 className="dashboard-title">System Versions</h1>
+          <h1 className="dashboard-title">System</h1>
         </div>
       </div>
     </div>
