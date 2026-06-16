@@ -55,6 +55,9 @@ export interface VersionDetailsCardProps {
   version: string;
   date: string;
   comment: string;
+  commentEditable?: boolean;
+  commentPlaceholder?: string;
+  onCommentChange?: (value: string) => void;
 }
 
 /** Author, version, date, and comment shown in the right sidebar. */
@@ -63,6 +66,9 @@ export const VersionDetailsCard: React.FC<VersionDetailsCardProps> = ({
   version,
   date,
   comment,
+  commentEditable = false,
+  commentPlaceholder = 'Add review notes…',
+  onCommentChange,
 }) => (
   <section className="review-details-card glass-card">
     <header className="review-section-header">
@@ -85,10 +91,16 @@ export const VersionDetailsCard: React.FC<VersionDetailsCardProps> = ({
     </dl>
 
     <textarea
-      className="review-comment"
-      readOnly
+      className={`review-comment${commentEditable ? ' review-comment--editable' : ''}`}
+      readOnly={!commentEditable}
       value={comment}
-      aria-label="Author comment"
+      placeholder={commentEditable ? commentPlaceholder : undefined}
+      onChange={
+        commentEditable && onCommentChange
+          ? (event) => onCommentChange(event.target.value)
+          : undefined
+      }
+      aria-label={commentEditable ? 'Review notes' : 'Review notes from approval'}
     />
   </section>
 );
@@ -480,10 +492,10 @@ export interface ReviewViewProps {
   entry: VersionEntry;
   onBack: () => void;
   onOpenRejectModal: () => void;
-  onApprove: () => void;
+  onApprove: (reviewComment: string) => void;
 }
 
-/** Review a draft: checklist must be complete before Approve is enabled. */
+/** Review a draft: checklist and review notes must be complete before Approve. */
 export const ReviewView: React.FC<ReviewViewProps> = ({
   entry,
   onBack,
@@ -492,15 +504,18 @@ export const ReviewView: React.FC<ReviewViewProps> = ({
 }) => {
   const reviewData = getReviewData(entry);
   const [checkedItems, setCheckedItems] = useState<Record<number, boolean>>({});
+  const [reviewComment, setReviewComment] = useState('');
 
   const toggleChecklistItem = (index: number) => {
     setCheckedItems((prev) => ({ ...prev, [index]: !prev[index] }));
   };
 
-  const isApproveEnabled = useMemo(
+  const isChecklistComplete = useMemo(
     () => reviewData.checklist.every((_, index) => checkedItems[index] === true),
     [reviewData.checklist, checkedItems],
   );
+
+  const isApproveEnabled = isChecklistComplete && reviewComment.trim().length > 0;
 
   return (
     <div className="review-page">
@@ -526,7 +541,9 @@ export const ReviewView: React.FC<ReviewViewProps> = ({
               author={reviewData.author}
               version={reviewData.version}
               date={reviewData.date}
-              comment={reviewData.comment}
+              comment={reviewComment}
+              commentEditable
+              onCommentChange={setReviewComment}
             />
 
             <section className="review-checklist-card glass-card">
@@ -564,7 +581,7 @@ export const ReviewView: React.FC<ReviewViewProps> = ({
               type="button"
               className="review-btn review-btn-approve"
               disabled={!isApproveEnabled}
-              onClick={onApprove}
+              onClick={() => onApprove(reviewComment.trim())}
             >
               Approve {reviewData.version}
             </button>
@@ -577,6 +594,7 @@ export const ReviewView: React.FC<ReviewViewProps> = ({
 
 export interface PublishViewProps {
   entry: VersionEntry;
+  reviewComment?: string;
   versionHistoryByInstruction: Record<string, VersionHistory>;
   onBack: () => void;
   onOpenRejectModal: () => void;
@@ -586,12 +604,13 @@ export interface PublishViewProps {
 /** Publish an approved version; opens a confirm modal before going live. */
 export const PublishView: React.FC<PublishViewProps> = ({
   entry,
+  reviewComment,
   versionHistoryByInstruction,
   onBack,
   onOpenRejectModal,
   onPublishConfirm,
 }) => {
-  const publishData = getPublishData(entry);
+  const publishData = getPublishData(entry, reviewComment);
   const publishConfirmDetails = getPublishConfirmDetails(
     entry,
     publishData,
@@ -793,4 +812,4 @@ export const ReadOnlyVersionView: React.FC<ReadOnlyVersionViewProps> = ({
       </div>
     </div>
   );
-};
+};

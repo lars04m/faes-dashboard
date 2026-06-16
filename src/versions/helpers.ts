@@ -168,12 +168,16 @@ export function getReviewData(entry: VersionEntry): ReviewData {
 
   return {
     ...data,
+    comment: '',
     previewSteps: data.previewSteps ?? getPreviewStepsForEntry(entry),
   };
 }
 
-/** Build publish screen content from mock overrides or entry metadata. */
-export function getPublishData(entry: VersionEntry): PublishData {
+/** Build publish screen content; uses saved review notes when available. */
+export function getPublishData(
+  entry: VersionEntry,
+  reviewComment?: string,
+): PublishData {
   const data =
     PUBLISH_DATA_BY_ENTRY[entry.id] ?? {
       ...DEFAULT_PUBLISH_DATA,
@@ -184,6 +188,7 @@ export function getPublishData(entry: VersionEntry): PublishData {
 
   return {
     ...data,
+    comment: reviewComment ?? data.comment,
     previewSteps: data.previewSteps ?? getPreviewStepsForEntry(entry),
   };
 }

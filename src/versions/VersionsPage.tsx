@@ -1,6 +1,5 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
-import { ActionToast, type ActionToastState, type ActionToastVariant } from './components/ActionToast';
 import { InstructionListView } from './components/InstructionListView';
 import { VersionHistoryView } from './components/VersionHistoryView';
 import {
@@ -31,6 +30,9 @@ export const VersionsPage: React.FC = () => {
     setBuilderSelection,
     setRejectionSubmissionForEntry,
     getRejectionSubmission,
+    setReviewComment,
+    getReviewComment,
+    showActionToast,
   } = useVersionsContext();
   const navigation = useVersionsNavigation();
 
@@ -38,28 +40,6 @@ export const VersionsPage: React.FC = () => {
   const { instructions, versionHistoryByInstruction } = versionsData;
 
   const [rejectModalEntryId, setRejectModalEntryId] = useState<string | null>(null);
-  const [actionToast, setActionToast] = useState<ActionToastState | null>(null);
-
-  const showActionToast = useCallback(
-    (message: string, variant: ActionToastVariant = 'success') => {
-      setActionToast({ message, variant });
-    },
-    [],
-  );
-
-  const dismissActionToast = useCallback(() => {
-    setActionToast(null);
-  }, []);
-
-  useEffect(() => {
-    if (!actionToast) return;
-
-    const timer = window.setTimeout(() => {
-      setActionToast(null);
-    }, 4500);
-
-    return () => window.clearTimeout(timer);
-  }, [actionToast]);
 
   const selectedInstruction = useMemo(
     () => instructions.find((instruction) => instruction.id === instructionId),
@@ -98,17 +78,14 @@ export const VersionsPage: React.FC = () => {
       ['review', 'publish', 'rejection', 'view'].includes(action),
   );
 
-  // Unknown instruction in URL → back to list.
   if (instructionId && !selectedInstruction) {
     return <Navigate to="/versions" replace />;
   }
 
-  // Workflow URL with missing entry → back to history.
   if (instructionId && action && entryId && !selectedEntry) {
     return <Navigate to={`/versions/${instructionId}`} replace />;
   }
 
-  // Rejection screen requires submission data from the reject modal.
   if (instructionId && action === 'rejection' && entryId && !getRejectionSubmission(entryId)) {
     return <Navigate to={`/versions/${instructionId}`} replace />;
   }
@@ -165,8 +142,10 @@ export const VersionsPage: React.FC = () => {
     showActionToast(`${version} is now live and replaced the previous version.`);
   };
 
-  const handleApproveReview = () => {
+  const handleApproveReview = (reviewComment: string) => {
     if (!instructionId || !entryId || !selectedEntry) return;
+
+    setReviewComment(entryId, reviewComment);
 
     updateInstructionHistory(instructionId, (history) => ({
       ...history,
@@ -176,7 +155,9 @@ export const VersionsPage: React.FC = () => {
     }));
 
     navigation.goToHistory(instructionId);
-    showActionToast(`${selectedEntry.version} approved and is ready to publish.`);
+    showActionToast(
+      `${selectedEntry.version} approved and is ready to publish. ${selectedEntry.author.split(' ')[0]} has been notified.`,
+    );
   };
 
   const handleGoToBuilder = () => {
@@ -190,6 +171,9 @@ export const VersionsPage: React.FC = () => {
       wasRejected: selectedEntry.status === 'rejected',
     });
     navigation.goToBuilder(instructionId, entryId);
+    showActionToast(
+      `Opening ${selectedEntry.version} in the instruction builder.`,
+    );
   };
 
   const renderContent = () => {
@@ -199,7 +183,10 @@ export const VersionsPage: React.FC = () => {
           entry={selectedEntry}
           submission={rejectionSubmission}
           onBack={() => navigation.goToHistory(instructionId!)}
-          onViewHistory={() => navigation.goToHistory(instructionId!)}
+          onViewHistory={() => {
+            navigation.goToHistory(instructionId!);
+            showActionToast(`Returned to version history for ${selectedInstruction.title}.`);
+          }}
           onGoToBuilder={handleGoToBuilder}
         />
       );
@@ -210,6 +197,7 @@ export const VersionsPage: React.FC = () => {
         <>
           <PublishView
             entry={selectedEntry}
+            reviewComment={getReviewComment(selectedEntry.id)}
             versionHistoryByInstruction={versionHistoryByInstruction}
             onBack={() => navigation.goToHistory(instructionId!)}
             onOpenRejectModal={() => handleOpenRejectModal(selectedEntry.id)}
@@ -280,16 +268,10 @@ export const VersionsPage: React.FC = () => {
   };
 
   return (
-    <>
-      <div
-        className={`dashboard-container${isWorkflowView ? ' dashboard-container--review' : ''}`}
-      >
-        {renderContent()}
-      </div>
-
-      {actionToast && (
-        <ActionToast toast={actionToast} onDismiss={dismissActionToast} />
-      )}
-    </>
+    <div
+      className={`dashboard-container${isWorkflowView ? ' dashboard-container--review' : ''}`}
+    >
+      {renderContent()}
+    </div>
   );
 };

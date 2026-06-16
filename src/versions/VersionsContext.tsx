@@ -2,6 +2,7 @@ import React, {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
   type ReactNode,
@@ -11,7 +12,12 @@ import type {
   VersionsDataState,
   VersionHistory,
 } from './types';
-import { createInitialVersionsData } from './mockData';
+import {
+  ActionToast,
+  type ActionToastState,
+  type ActionToastVariant,
+} from './components/ActionToast';
+import { createInitialReviewComments, createInitialVersionsData } from './mockData';
 import { syncInstructionInState } from './helpers';
 
 /** Context passed to the Instruction Builder when editing a rejected draft. */
@@ -39,6 +45,11 @@ interface VersionsContextValue {
     submission: RejectionSubmission,
   ) => void;
   getRejectionSubmission: (entryId: string) => RejectionSubmission | undefined;
+  reviewCommentsByEntryId: Record<string, string>;
+  setReviewComment: (entryId: string, comment: string) => void;
+  getReviewComment: (entryId: string) => string | undefined;
+  showActionToast: (message: string, variant?: ActionToastVariant) => void;
+  dismissActionToast: () => void;
 }
 
 const VersionsContext = createContext<VersionsContextValue | null>(null);
@@ -53,6 +64,31 @@ export function VersionsProvider({ children }: { children: ReactNode }) {
   const [rejectionSubmissions, setRejectionSubmissions] = useState<
     Record<string, RejectionSubmission>
   >({});
+  const [reviewCommentsByEntryId, setReviewCommentsByEntryId] = useState<
+    Record<string, string>
+  >(createInitialReviewComments);
+  const [actionToast, setActionToast] = useState<ActionToastState | null>(null);
+
+  const showActionToast = useCallback(
+    (message: string, variant: ActionToastVariant = 'success') => {
+      setActionToast({ message, variant });
+    },
+    [],
+  );
+
+  const dismissActionToast = useCallback(() => {
+    setActionToast(null);
+  }, []);
+
+  useEffect(() => {
+    if (!actionToast) return;
+
+    const timer = window.setTimeout(() => {
+      setActionToast(null);
+    }, 4500);
+
+    return () => window.clearTimeout(timer);
+  }, [actionToast]);
 
   const updateInstructionHistory = useCallback(
     (instructionId: string, updater: (history: VersionHistory) => VersionHistory) => {
@@ -102,6 +138,15 @@ export function VersionsProvider({ children }: { children: ReactNode }) {
     [rejectionSubmissions],
   );
 
+  const setReviewComment = useCallback((entryId: string, comment: string) => {
+    setReviewCommentsByEntryId((prev) => ({ ...prev, [entryId]: comment }));
+  }, []);
+
+  const getReviewComment = useCallback(
+    (entryId: string) => reviewCommentsByEntryId[entryId],
+    [reviewCommentsByEntryId],
+  );
+
   const value = useMemo(
     (): VersionsContextValue => ({
       versionsData,
@@ -113,6 +158,11 @@ export function VersionsProvider({ children }: { children: ReactNode }) {
       rejectionSubmissions,
       setRejectionSubmissionForEntry,
       getRejectionSubmission,
+      reviewCommentsByEntryId,
+      setReviewComment,
+      getReviewComment,
+      showActionToast,
+      dismissActionToast,
     }),
     [
       versionsData,
@@ -122,11 +172,21 @@ export function VersionsProvider({ children }: { children: ReactNode }) {
       rejectionSubmissions,
       setRejectionSubmissionForEntry,
       getRejectionSubmission,
+      reviewCommentsByEntryId,
+      setReviewComment,
+      getReviewComment,
+      showActionToast,
+      dismissActionToast,
     ],
   );
 
   return (
-    <VersionsContext.Provider value={value}>{children}</VersionsContext.Provider>
+    <VersionsContext.Provider value={value}>
+      {children}
+      {actionToast && (
+        <ActionToast toast={actionToast} onDismiss={dismissActionToast} />
+      )}
+    </VersionsContext.Provider>
   );
 }
 

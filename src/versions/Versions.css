@@ -779,6 +779,21 @@
   resize: vertical;
 }
 
+.review-comment--editable {
+  color: var(--text-primary);
+  background-color: var(--bg-secondary);
+}
+
+.review-comment--editable:focus {
+  outline: none;
+  border-color: var(--brand-orange);
+  box-shadow: 0 0 0 3px rgba(239, 125, 0, 0.1);
+}
+
+.review-comment--editable::placeholder {
+  color: var(--text-muted);
+}
+
 /* Review screen: checklist and approve button states */
 .review-checklist {
   list-style: none;

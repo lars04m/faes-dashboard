@@ -51,6 +51,56 @@ export const INITIAL_INSTRUCTIONS: Instruction[] = [
     updatedAt: 'June 4th',
     status: 'draft',
   },
+  {
+    id: 'wi-5',
+    title: 'Product T12',
+    version: 'v2.0',
+    description: 'Final assembly torque sequence for T12 housing',
+    author: 'Jane Larsen',
+    authorInitials: 'JL',
+    updatedAt: 'June 1st',
+    status: 'live',
+  },
+  {
+    id: 'wi-6',
+    title: 'T45',
+    version: 'v1.2',
+    description: 'Cable harness routing and strain relief checks',
+    author: 'Marc Bakker',
+    authorInitials: 'MB',
+    updatedAt: 'May 30th',
+    status: 'live',
+  },
+  {
+    id: 'wi-7',
+    title: 'T22',
+    version: 'v1.1',
+    description: 'Updated ESD grounding steps for rework station',
+    author: 'Sara Willems',
+    authorInitials: 'SW',
+    updatedAt: 'June 6th',
+    status: 'review',
+  },
+  {
+    id: 'wi-8',
+    title: 'T56',
+    version: 'v2.3',
+    description: 'Leak test procedure with revised pressure hold time',
+    author: 'Jane Larsen',
+    authorInitials: 'JL',
+    updatedAt: 'June 5th',
+    status: 'review',
+  },
+  {
+    id: 'wi-9',
+    title: 'Product T18',
+    version: 'v0.9',
+    description: 'Pre-ship visual inspection checklist',
+    author: 'Marc Bakker',
+    authorInitials: 'MB',
+    updatedAt: 'June 7th',
+    status: 'review',
+  },
 ];
 
 /** Build a mock archived version entry for read-only preview. */
@@ -220,7 +270,142 @@ export const INITIAL_VERSION_HISTORY: Record<string, VersionHistory> = {
     ],
     archivedEntries: [],
   },
+  'wi-5': {
+    totalVersions: 2,
+    entries: [
+      {
+        id: 'v-5-live',
+        version: 'v2.0',
+        description: 'Live: housing torque sequence with 6 Nm spec',
+        author: 'Jane Larsen',
+        authorInitials: 'JL',
+        updatedAt: 'June 1st',
+        status: 'live',
+      },
+    ],
+    archivedEntries: [
+      createArchivedEntry(
+        'v-5-arch-v1.0',
+        'v1.0',
+        'Initial T12 assembly without torque driver callout',
+        'Jane Larsen',
+        'JL',
+        'April 20th',
+      ),
+    ],
+  },
+  'wi-6': {
+    totalVersions: 2,
+    entries: [
+      {
+        id: 'v-6-live',
+        version: 'v1.2',
+        description: 'Live: harness routing with strain relief visual',
+        author: 'Marc Bakker',
+        authorInitials: 'MB',
+        updatedAt: 'May 30th',
+        status: 'live',
+      },
+    ],
+    archivedEntries: [
+      createArchivedEntry(
+        'v-6-arch-v1.0',
+        'v1.0',
+        'Original cable routing without strain relief step',
+        'Marc Bakker',
+        'MB',
+        'May 5th',
+      ),
+    ],
+  },
+  'wi-7': {
+    totalVersions: 2,
+    entries: [
+      {
+        id: 'v-7-ready',
+        version: 'v1.1',
+        description: 'Approved ESD wrist strap and mat verification steps',
+        author: 'Sara Willems',
+        authorInitials: 'SW',
+        updatedAt: 'June 6th',
+        status: 'ready-to-publish',
+      },
+    ],
+    archivedEntries: [
+      createArchivedEntry(
+        'v-7-arch-v1.0',
+        'v1.0',
+        'Basic grounding check without mat resistance test',
+        'Sara Willems',
+        'SW',
+        'May 15th',
+      ),
+    ],
+  },
+  'wi-8': {
+    totalVersions: 3,
+    entries: [
+      {
+        id: 'v-8-ready',
+        version: 'v2.3',
+        description: 'Extended pressure hold from 30s to 45s after QA audit',
+        author: 'Jane Larsen',
+        authorInitials: 'JL',
+        updatedAt: 'June 5th',
+        status: 'ready-to-publish',
+      },
+    ],
+    archivedEntries: [
+      createArchivedEntry(
+        'v-8-arch-v2.0',
+        'v2.0',
+        'Leak test at 30 second hold',
+        'Jane Larsen',
+        'JL',
+        'May 8th',
+      ),
+      createArchivedEntry(
+        'v-8-arch-v2.1',
+        'v2.1',
+        'Added pressure gauge photo reference',
+        'Jane Larsen',
+        'JL',
+        'May 22nd',
+      ),
+    ],
+  },
+  'wi-9': {
+    totalVersions: 2,
+    entries: [
+      {
+        id: 'v-9-ready',
+        version: 'v0.9',
+        description: 'Pre-ship cosmetic and label placement checklist',
+        author: 'Marc Bakker',
+        authorInitials: 'MB',
+        updatedAt: 'June 7th',
+        status: 'ready-to-publish',
+      },
+    ],
+    archivedEntries: [
+      createArchivedEntry(
+        'v-9-arch-v0.8',
+        'v0.8',
+        'Draft inspection list without label alignment visual',
+        'Marc Bakker',
+        'MB',
+        'June 1st',
+      ),
+    ],
+  },
 };
+
+/** Pre-filled review notes for versions already approved before the session started. */
+export function createInitialReviewComments(): Record<string, string> {
+  return Object.fromEntries(
+    Object.entries(PUBLISH_DATA_BY_ENTRY).map(([entryId, data]) => [entryId, data.comment]),
+  );
+}
 
 export function createInitialVersionsData(): VersionsDataState {
   return {
@@ -372,14 +557,81 @@ export const PREVIEW_STEPS_BY_ENTRY: Record<string, PreviewStep[]> = {
     },
     { type: 'normal', title: 'Step 4', content: 'Wipe station dry before next batch' },
   ],
+  'v-5-live': [
+    { type: 'normal', title: 'Step 1', content: 'Verify T12 work order and lot traceability' },
+    { type: 'normal', title: 'Step 2', content: 'Seat housing on fixture pins H1–H4' },
+    { type: 'normal', title: 'Step 3', content: 'Torque housing bolts to 6 Nm (8x)' },
+    {
+      type: 'visual',
+      title: 'Step 4 - Visual',
+      content: 'Bolt pattern — T12 housing top view',
+      badge: 'Visual',
+    },
+  ],
+  'v-6-live': [
+    { type: 'normal', title: 'Step 1', content: 'De-energize panel and verify zero voltage' },
+    { type: 'normal', title: 'Step 2', content: 'Route harness along guide clips C1–C6' },
+    {
+      type: 'visual',
+      title: 'Step 3 - Visual',
+      content: 'Strain relief orientation at bulkhead',
+      badge: 'Visual',
+    },
+    { type: 'normal', title: 'Step 4', content: 'Secure tie-wraps at 150 mm intervals' },
+  ],
+  'v-7-ready': [
+    { type: 'normal', title: 'Step 1', content: 'Inspect ESD wrist strap for wear or cracks' },
+    {
+      type: 'added',
+      title: 'Step 2 - ADDED',
+      content: 'Test mat resistance with ground meter (< 1 GΩ)',
+    },
+    { type: 'normal', title: 'Step 3', content: 'Connect wrist strap to ground point G4' },
+    {
+      type: 'visual',
+      title: 'Step 4 - Visual',
+      content: 'Ground point G4 location at rework bench',
+      badge: 'Visual',
+    },
+  ],
+  'v-8-ready': [
+    { type: 'normal', title: 'Step 1', content: 'Connect test fixture and seal all ports' },
+    {
+      type: 'removed',
+      title: 'Step 2 - REMOVED',
+      content: 'Hold pressure at 2.5 bar for 30 seconds',
+    },
+    {
+      type: 'added',
+      title: 'Step 2 - ADDED',
+      content: 'Hold pressure at 2.5 bar for 45 seconds',
+    },
+    { type: 'normal', title: 'Step 3', content: 'Record leak rate on traveler form' },
+    {
+      type: 'visual',
+      title: 'Step 4 - Visual',
+      content: 'Pressure gauge reading at hold midpoint',
+      badge: 'Visual',
+    },
+  ],
+  'v-9-ready': [
+    { type: 'normal', title: 'Step 1', content: 'Remove protective film from display lens' },
+    { type: 'normal', title: 'Step 2', content: 'Verify serial label matches work order' },
+    {
+      type: 'visual',
+      title: 'Step 3 - Visual',
+      content: 'Label placement within tolerance zone',
+      badge: 'Visual',
+    },
+    { type: 'normal', title: 'Step 4', content: 'Sign off pre-ship checklist on traveler' },
+  ],
 };
 
 export const DEFAULT_REVIEW_DATA: ReviewData = {
   author: 'Sara Willems',
   version: 'v3.5',
   date: 'June 5th',
-  comment:
-    'Coolant reroute needs clearer clamp torque callout. Added two visuals for line C and bulkhead entry.',
+  comment: '',
   checklist: [
     'Technically accurate and safe to follow',
     'Clear and correct visuals',
@@ -424,8 +676,7 @@ export const REVIEW_DATA_BY_ENTRY: Record<string, ReviewData> = {
     author: 'Sara Willems',
     version: 'v3.5',
     date: 'June 5th',
-    comment:
-      'Coolant reroute needs clearer clamp torque callout. Added two visuals for line C and bulkhead entry.',
+    comment: '',
     checklist: DEFAULT_REVIEW_DATA.checklist,
     previewSteps: PREVIEW_STEPS_BY_ENTRY['v-1-draft'],
   },
@@ -433,8 +684,7 @@ export const REVIEW_DATA_BY_ENTRY: Record<string, ReviewData> = {
     author: 'Sara Willems',
     version: 'v0.4',
     date: 'June 4th',
-    comment:
-      'First draft of dispenser workflow. Needs review on SDS step order and fill-level visual.',
+    comment: '',
     checklist: DEFAULT_REVIEW_DATA.checklist,
     previewSteps: PREVIEW_STEPS_BY_ENTRY['v-4-draft'],
   },
@@ -462,4 +712,38 @@ export const PUBLISH_DATA_BY_ENTRY: Record<string, PublishData> = {
       { id: 'op-3', name: 'Stefan Witlox', initials: 'SW', assignment: 'Triage T-10' },
     ],
   },
-};
+  'v-7-ready': {
+    author: 'Sara Willems',
+    version: 'v1.1',
+    date: 'June 6th',
+    comment:
+      'Mat resistance test is mandatory before any rework. Ground point G4 visual added.',
+    previewSteps: PREVIEW_STEPS_BY_ENTRY['v-7-ready'],
+    operatorsOnShift: [
+      { id: 'op-4', name: 'Tim Kuijpers', initials: 'TK', assignment: 'Rework station' },
+    ],
+  },
+  'v-8-ready': {
+    author: 'Jane Larsen',
+    version: 'v2.3',
+    date: 'June 5th',
+    comment:
+      'Extended hold time per QA audit finding LF-2024-18. Gauge photo reference at 22s mark.',
+    previewSteps: PREVIEW_STEPS_BY_ENTRY['v-8-ready'],
+    operatorsOnShift: [
+      { id: 'op-5', name: 'Stefan Witlox', initials: 'SW', assignment: 'Leak test cell' },
+      { id: 'op-6', name: 'Marc Bakker', initials: 'MB', assignment: 'Leak test cell' },
+    ],
+  },
+  'v-9-ready': {
+    author: 'Marc Bakker',
+    version: 'v0.9',
+    date: 'June 7th',
+    comment:
+      'Label alignment visual replaces written tolerance note. Pre-ship sign-off moved to final step.',
+    previewSteps: PREVIEW_STEPS_BY_ENTRY['v-9-ready'],
+    operatorsOnShift: [
+      { id: 'op-7', name: 'Sara Willems', initials: 'SW', assignment: 'Final inspection' },
+    ],
+  },
+};
