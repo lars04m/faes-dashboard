@@ -1,3 +1,222 @@
+/* Work Instruction Statuses */
+.instruction-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.75rem;
+}
+
+.instruction-search-wrapper {
+  position: relative;
+  flex: 1;
+  min-width: 240px;
+  max-width: 420px;
+}
+
+.instruction-search-icon {
+  position: absolute;
+  left: 0.85rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.instruction-search-input {
+  padding-left: 2.35rem;
+}
+
+.instruction-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.instruction-filter-btn {
+  padding: 0.45rem 1rem;
+  border-radius: 999px;
+  border: 1px solid var(--border-color);
+  background-color: var(--bg-secondary);
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.instruction-filter-btn:hover {
+  border-color: #cbd5e1;
+  background-color: var(--bg-tertiary);
+}
+
+.instruction-filter-btn.active {
+  background-color: rgba(239, 125, 0, 0.08);
+  border-color: var(--brand-orange);
+  color: var(--brand-orange);
+}
+
+.instruction-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 1.75rem;
+}
+
+.instruction-section-header {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-bottom: 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.instruction-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.instruction-card {
+  position: relative;
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.instruction-card:hover {
+  border-color: #cbd5e1;
+  box-shadow: var(--shadow-md);
+}
+
+.instruction-accent {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+}
+
+.instruction-card-body {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 1rem 1.15rem 1rem 1.25rem;
+}
+
+.instruction-icon {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.instruction-icon-live {
+  background-color: var(--color-success-bg);
+  color: var(--color-success);
+}
+
+.instruction-icon-review {
+  background-color: var(--color-info-bg);
+  color: var(--color-info);
+  border-radius: 50%;
+}
+
+.instruction-icon-draft {
+  background-color: var(--bg-tertiary);
+  color: var(--text-secondary);
+  border-radius: 50%;
+}
+
+.instruction-details {
+  flex: 1;
+  min-width: 0;
+}
+
+.instruction-title-row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.instruction-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--brand-navy);
+}
+
+.instruction-version {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.instruction-description {
+  margin-top: 0.1rem;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  line-height: 1.35;
+}
+
+.instruction-meta {
+  margin-top: 0.25rem;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.instruction-badge {
+  flex-shrink: 0;
+  padding: 0.3rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.instruction-badge-live {
+  background-color: var(--color-success-bg);
+  color: var(--color-success);
+}
+
+.instruction-badge-review {
+  background-color: var(--color-info-bg);
+  color: var(--color-info);
+}
+
+.instruction-badge-draft {
+  background-color: var(--bg-tertiary);
+  color: var(--text-secondary);
+}
+
+.instruction-chevron {
+  flex-shrink: 0;
+  color: var(--text-muted);
+}
+
+.instruction-empty {
+  padding: 2rem;
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
 .env-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
