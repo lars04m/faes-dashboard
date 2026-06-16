@@ -1,4 +1,14 @@
-/* Work Instruction Statuses */
+/*
+ * Versions.css
+ *
+ * Styles for the Work Instruction Versions page.
+ * Section order matches Versions.tsx:
+ *   Instruction list → Version history → Review/Publish/Rejection → Modals → Toasts
+ */
+
+/* --- Instruction list (home screen) --- */
+
+/* Search bar and status filter pills */
 .instruction-toolbar {
   display: flex;
   flex-wrap: wrap;
@@ -58,6 +68,7 @@
   color: var(--brand-orange);
 }
 
+/* Grouped sections: LIVE, REVIEW, DRAFT */
 .instruction-groups {
   display: flex;
   flex-direction: column;
@@ -82,6 +93,7 @@
   gap: 0.65rem;
 }
 
+/* Clickable instruction row */
 .instruction-card {
   position: relative;
   display: block;
@@ -217,7 +229,9 @@
   font-size: 0.9rem;
 }
 
-/* Version History detail */
+/* --- Version history screen --- */
+
+/* Back button and breadcrumb */
 .version-history-header {
   display: flex;
   flex-wrap: wrap;
@@ -253,6 +267,7 @@
   color: var(--text-secondary);
 }
 
+/* Single version row with badge and action button */
 .version-entry-card {
   position: relative;
   background: var(--bg-secondary);
@@ -361,6 +376,7 @@
   border-color: #cbd5e1;
 }
 
+/* Expandable list of older versions */
 .version-archived-panel {
   display: flex;
   align-items: center;
@@ -424,7 +440,9 @@
   padding: 0.25rem 0;
 }
 
-/* Version Review */
+/* --- Review / Publish / Rejection layout (shared) --- */
+
+/* Lock page to viewport height; only the preview steps scroll */
 .dashboard-container--review {
   height: 100vh;
   max-height: 100vh;
@@ -457,6 +475,7 @@
   gap: 1rem;
 }
 
+/* Two-column layout: preview left, sidebar right */
 .review-layout {
   display: grid;
   grid-template-columns: minmax(0, 1.4fr) minmax(280px, 0.85fr);
@@ -533,6 +552,7 @@
   background-color: var(--color-success);
 }
 
+/* Scrollable step list in the left preview column */
 .review-steps {
   display: flex;
   flex-direction: column;
@@ -580,6 +600,7 @@
   line-height: 1.4;
 }
 
+/* Diff highlighting: removed (red) and added (green) steps */
 .review-step-removed {
   background-color: var(--color-danger-bg);
   border-color: rgba(239, 68, 68, 0.2);
@@ -627,6 +648,7 @@
   background-color: var(--bg-secondary);
 }
 
+/* Right sidebar: version details, checklist, and action buttons */
 .review-sidebar {
   display: flex;
   flex-direction: column;
@@ -645,6 +667,7 @@
   padding-right: 0.15rem;
 }
 
+/* Reject / Approve (or Publish) buttons — full width of sidebar */
 .workflow-sidebar-actions {
   flex-shrink: 0;
   display: grid;
@@ -701,6 +724,7 @@
   resize: vertical;
 }
 
+/* Review screen: checklist and approve button states */
 .review-checklist {
   list-style: none;
   display: flex;
@@ -790,7 +814,7 @@
   cursor: not-allowed;
 }
 
-/* Publish operator impact */
+/* --- Publish screen: operator impact section --- */
 .publish-operator-card {
   padding: 1.25rem;
 }
@@ -913,7 +937,7 @@
   color: var(--brand-orange);
 }
 
-/* Rejection feedback */
+/* --- Rejection screen: feedback card --- */
 .rejection-feedback-card {
   padding: 1.25rem;
 }
@@ -1015,7 +1039,7 @@
   border-color: #091a30;
 }
 
-/* Reject modal */
+/* --- Modals (shared overlay + reject / publish confirm) --- */
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -1215,7 +1239,7 @@
   cursor: not-allowed;
 }
 
-/* Publish confirm modal */
+/* Publish confirmation dialog content */
 .publish-confirm-body {
   display: flex;
   flex-direction: column;
@@ -1564,7 +1588,9 @@
   color: var(--text-muted);
 }
 
-/* Timeline Tag (simple rectangular border, no heavy pills) */
+/* --- Legacy / unused styles (kept for reference) --- */
+
+/* Timeline tag badges */
 .timeline-tag {
   font-size: 0.725rem;
   font-weight: 500;
@@ -1587,7 +1613,7 @@
   border-color: rgba(16, 185, 129, 0.2);
 }
 
-/* Deploy simulator widget */
+/* Deploy simulator toast (not used by current Versions flow) */
 .deploy-toast {
   position: fixed;
   bottom: 2rem;
@@ -1617,7 +1643,7 @@
   to { transform: rotate(360deg); }
 }
 
-/* Action toast notifications */
+/* --- Action toast (approve / publish / rejection confirmations) --- */
 .action-toast {
   position: fixed;
   bottom: 2rem;

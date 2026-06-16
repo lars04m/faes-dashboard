@@ -15,10 +15,23 @@ import {
 import stepVisualImage from '../assets/image-1.png';
 import './Versions.css';
 
+/*
+ * Versions page
+ *
+ * Screen flow (local state, no router):
+ *   Instruction list → Version history → Review | Publish | Rejection
+ *
+ * Reject opens a modal first; publish opens a confirm modal from the Publish screen.
+ * Success actions show a bottom-right toast.
+ */
+
+// --- Types ---
+
 type InstructionStatus = 'live' | 'review' | 'draft';
 type StatusFilter = 'all' | InstructionStatus;
 type VersionHistoryStatus = 'live' | 'ready-to-publish' | 'draft';
 
+/** Summary row on the main instruction list. */
 interface Instruction {
   id: string;
   title: string;
@@ -30,6 +43,7 @@ interface Instruction {
   authorInitials?: string;
 }
 
+/** One version row inside an instruction's history (live, draft, etc.). */
 interface VersionEntry {
   id: string;
   version: string;
@@ -40,6 +54,7 @@ interface VersionEntry {
   status: VersionHistoryStatus;
 }
 
+/** All versions for a single work instruction, grouped by status. */
 interface VersionHistory {
   totalVersions: number;
   entries: VersionEntry[];
@@ -48,6 +63,7 @@ interface VersionHistory {
 
 type PreviewStepType = 'normal' | 'removed' | 'added' | 'visual';
 
+/** A single step shown in the Review/Publish/Rejection preview panel. */
 interface PreviewStep {
   type: PreviewStepType;
   title: string;
@@ -55,6 +71,7 @@ interface PreviewStep {
   badge?: string;
 }
 
+/** Content for the Review workflow screen (includes reviewer checklist). */
 interface ReviewData {
   author: string;
   version: string;
@@ -64,6 +81,7 @@ interface ReviewData {
   previewSteps: PreviewStep[];
 }
 
+/** Operator listed in the Publish screen "operator impact" section. */
 interface OperatorOnShift {
   id: string;
   name: string;
@@ -71,6 +89,7 @@ interface OperatorOnShift {
   assignment: string;
 }
 
+/** Content for the Publish workflow screen. */
 interface PublishData {
   author: string;
   version: string;
@@ -80,6 +99,7 @@ interface PublishData {
   operatorsOnShift: OperatorOnShift[];
 }
 
+/** Fields shown in the "Publish vX?" confirmation modal. */
 interface PublishConfirmDetails {
   publishingVersion: string;
   publisherName: string;
@@ -89,6 +109,7 @@ interface PublishConfirmDetails {
   affectedOperators: string[];
 }
 
+/** Reviewer info shown on the Rejection screen feedback card. */
 interface RejectionFeedback {
   reviewerName: string;
   reviewerInitials: string;
@@ -98,6 +119,7 @@ interface RejectionFeedback {
   feedback: string;
 }
 
+/** Content for the Rejection workflow screen. */
 interface RejectionData {
   author: string;
   version: string;
@@ -107,6 +129,7 @@ interface RejectionData {
   rejectionFeedback: RejectionFeedback;
 }
 
+/** Values collected in the Reject modal before opening the Rejection screen. */
 interface RejectionSubmission {
   reasons: string[];
   additionalDetails: string;
@@ -120,6 +143,8 @@ const REJECTION_REASON_OPTIONS = [
   'Other',
 ] as const;
 
+// --- Toast notification ---
+
 type ActionToastVariant = 'success' | 'danger';
 
 interface ActionToastState {
@@ -132,6 +157,7 @@ interface ActionToastProps {
   onDismiss: () => void;
 }
 
+/** Bottom-right confirmation after approve, publish, or send rejection. */
 const ActionToast: React.FC<ActionToastProps> = ({ toast, onDismiss }) => {
   const Icon = toast.variant === 'success' ? CircleCheck : MessageCircle;
 
@@ -155,14 +181,19 @@ const ActionToast: React.FC<ActionToastProps> = ({ toast, onDismiss }) => {
   );
 };
 
+// --- UI config (labels, colors, icons) ---
+
+/** Display order for status groups on the instruction list. */
 const STATUS_ORDER: InstructionStatus[] = ['live', 'review', 'draft'];
 
+/** Display order for groups on the version history page. */
 const VERSION_HISTORY_ORDER: VersionHistoryStatus[] = [
   'live',
   'ready-to-publish',
   'draft',
 ];
 
+/** Badge and accent styling for each instruction list status. */
 const STATUS_CONFIG: Record<
   InstructionStatus,
   {
@@ -196,6 +227,7 @@ const STATUS_CONFIG: Record<
   },
 };
 
+/** Badge, accent, and action button for each version history status. */
 const VERSION_HISTORY_CONFIG: Record<
   VersionHistoryStatus,
   {
@@ -232,6 +264,7 @@ const VERSION_HISTORY_CONFIG: Record<
   },
 };
 
+/** Status filter pills on the instruction list toolbar. */
 const FILTER_OPTIONS: { value: StatusFilter; label: string }[] = [
   { value: 'all', label: 'All' },
   { value: 'live', label: 'Live' },
@@ -239,6 +272,9 @@ const FILTER_OPTIONS: { value: StatusFilter; label: string }[] = [
   { value: 'draft', label: 'Draft' },
 ];
 
+// --- Mock data (demo content) ---
+
+/** All work instructions shown on the main list screen. */
 const INSTRUCTIONS: Instruction[] = [
   {
     id: 'wi-1',
@@ -280,6 +316,7 @@ const INSTRUCTIONS: Instruction[] = [
   },
 ];
 
+/** Version history entries keyed by instruction id (wi-1, wi-2, …). */
 const VERSION_HISTORY_BY_INSTRUCTION: Record<string, VersionHistory> = {
   'wi-1': {
     totalVersions: 6,
@@ -361,6 +398,7 @@ const VERSION_HISTORY_BY_INSTRUCTION: Record<string, VersionHistory> = {
   },
 };
 
+/** Default operators shown on the Publish screen for Product T8. */
 const DEFAULT_OPERATORS_ON_SHIFT: OperatorOnShift[] = [
   {
     id: 'op-1',
@@ -376,6 +414,7 @@ const DEFAULT_OPERATORS_ON_SHIFT: OperatorOnShift[] = [
   },
 ];
 
+/** Fallback preview steps (T8 v3.4 diff) when no entry-specific steps exist. */
 const DEFAULT_PREVIEW_STEPS: PreviewStep[] = [
   { type: 'normal', title: 'Step 1', content: 'Put on nitrile gloves and ESD wrist strap' },
   { type: 'normal', title: 'Step 2', content: 'Mount baseplate on fixture pins A1–A4' },
@@ -403,6 +442,7 @@ const DEFAULT_PREVIEW_STEPS: PreviewStep[] = [
   },
 ];
 
+/** Preview steps per version entry id — each instruction has its own sequence. */
 const PREVIEW_STEPS_BY_ENTRY: Record<string, PreviewStep[]> = {
   'v-1-live': [
     { type: 'normal', title: 'Step 1', content: 'Put on nitrile gloves and ESD wrist strap' },
@@ -547,6 +587,7 @@ const DEFAULT_REJECTION_DATA: RejectionData = {
   rejectionFeedback: DEFAULT_REJECTION_FEEDBACK,
 };
 
+/** Override review content for specific draft entries. */
 const REVIEW_DATA_BY_ENTRY: Record<string, ReviewData> = {
   'v-1-draft': {
     author: 'Sara Willems',
@@ -568,6 +609,7 @@ const REVIEW_DATA_BY_ENTRY: Record<string, ReviewData> = {
   },
 };
 
+/** Override publish content for ready-to-publish entries. */
 const PUBLISH_DATA_BY_ENTRY: Record<string, PublishData> = {
   'v-1-ready': {
     author: 'Marc Bakker',
@@ -591,16 +633,21 @@ const PUBLISH_DATA_BY_ENTRY: Record<string, PublishData> = {
   },
 };
 
+// --- Data lookup helpers ---
+
+/** Preview steps for a version entry; falls back to the default T8 diff. */
 function getPreviewStepsForEntry(entry: VersionEntry): PreviewStep[] {
   return PREVIEW_STEPS_BY_ENTRY[entry.id] ?? DEFAULT_PREVIEW_STEPS;
 }
 
+/** Find which instruction owns a version entry (used for publish "replacing" label). */
 function findInstructionIdForEntry(entryId: string): string | undefined {
   return Object.entries(VERSION_HISTORY_BY_INSTRUCTION).find(([, history]) =>
     history.entries.some((entry) => entry.id === entryId),
   )?.[0];
 }
 
+/** Current live version for an instruction, if one exists. */
 function getLiveVersionForInstruction(instructionId: string): string | undefined {
   const liveEntry = getVersionHistory(instructionId).entries.find(
     (entry) => entry.status === 'live',
@@ -608,6 +655,7 @@ function getLiveVersionForInstruction(instructionId: string): string | undefined
   return liveEntry?.version;
 }
 
+/** Build review screen content from mock overrides or entry metadata. */
 function getReviewData(entry: VersionEntry): ReviewData {
   const data =
     REVIEW_DATA_BY_ENTRY[entry.id] ?? {
@@ -623,6 +671,7 @@ function getReviewData(entry: VersionEntry): ReviewData {
   };
 }
 
+/** Build publish screen content from mock overrides or entry metadata. */
 function getPublishData(entry: VersionEntry): PublishData {
   const data =
     PUBLISH_DATA_BY_ENTRY[entry.id] ?? {
@@ -638,6 +687,7 @@ function getPublishData(entry: VersionEntry): PublishData {
   };
 }
 
+/** Summary shown in the "Publish vX?" confirmation modal. */
 function getPublishConfirmDetails(
   entry: VersionEntry,
   publishData: PublishData,
@@ -656,6 +706,7 @@ function getPublishConfirmDetails(
   };
 }
 
+/** Build rejection screen content; feedback text comes from the reject modal. */
 function getRejectionData(entry: VersionEntry): RejectionData {
   return {
     ...DEFAULT_REJECTION_DATA,
@@ -666,18 +717,21 @@ function getRejectionData(entry: VersionEntry): RejectionData {
   };
 }
 
+/** Icons for LIVE / REVIEW / DRAFT section headers on the instruction list. */
 const LIST_SECTION_ICONS: Record<InstructionStatus, React.ElementType> = {
   live: Bell,
   review: MessageCircle,
   draft: Pencil,
 };
 
+/** Icons for version history section headers. */
 const HISTORY_SECTION_ICONS: Record<VersionHistoryStatus, React.ElementType> = {
   live: Bell,
   'ready-to-publish': CheckCircle2,
   draft: Pencil,
 };
 
+/** True when the instruction matches the search box text. */
 function matchesSearch(instruction: Instruction, query: string): boolean {
   const normalizedQuery = query.trim().toLowerCase();
   if (!normalizedQuery) return true;
@@ -695,10 +749,12 @@ function matchesSearch(instruction: Instruction, query: string): boolean {
   return searchableText.includes(normalizedQuery);
 }
 
+/** True when the instruction matches the selected status filter pill. */
 function matchesFilter(instruction: Instruction, filter: StatusFilter): boolean {
   return filter === 'all' || instruction.status === filter;
 }
 
+/** Load version history for an instruction, or an empty fallback. */
 function getVersionHistory(instructionId: string): VersionHistory {
   return (
     VERSION_HISTORY_BY_INSTRUCTION[instructionId] ?? {
@@ -709,11 +765,14 @@ function getVersionHistory(instructionId: string): VersionHistory {
   );
 }
 
+// --- Instruction list (home screen) ---
+
 interface InstructionCardProps {
   instruction: Instruction;
   onSelect: (instructionId: string) => void;
 }
 
+/** Clickable card for one work instruction on the main list. */
 const InstructionCard: React.FC<InstructionCardProps> = ({ instruction, onSelect }) => {
   const config = STATUS_CONFIG[instruction.status];
   const isLive = instruction.status === 'live';
@@ -958,6 +1017,7 @@ interface InstructionListViewProps {
   onSelectInstruction: (instructionId: string) => void;
 }
 
+/** Main list with search, status filters, and grouped instruction cards. */
 const InstructionListView: React.FC<InstructionListViewProps> = ({
   onSelectInstruction,
 }) => {
@@ -1055,6 +1115,8 @@ const InstructionListView: React.FC<InstructionListViewProps> = ({
   );
 };
 
+// --- Version history screen ---
+
 interface VersionHistoryViewProps {
   instruction: Instruction;
   onBack: () => void;
@@ -1062,6 +1124,7 @@ interface VersionHistoryViewProps {
   onPublish: (entryId: string) => void;
 }
 
+/** All versions for one instruction, grouped by status with Review/Publish actions. */
 const VersionHistoryView: React.FC<VersionHistoryViewProps> = ({
   instruction,
   onBack,
@@ -1117,10 +1180,14 @@ const VersionHistoryView: React.FC<VersionHistoryViewProps> = ({
   );
 };
 
+// --- Shared workflow UI (preview panel, sidebar, action buttons) ---
+// Used by Review, Publish, and Rejection screens.
+
 interface PreviewStepCardProps {
   step: PreviewStep;
 }
 
+/** One step in the left-hand preview (normal, added, removed, or visual). */
 const PreviewStepCard: React.FC<PreviewStepCardProps> = ({ step }) => {
   if (step.type === 'visual') {
     return (
@@ -1154,6 +1221,7 @@ interface VersionDetailsCardProps {
   comment: string;
 }
 
+/** Author, version, date, and comment shown in the right sidebar. */
 const VersionDetailsCard: React.FC<VersionDetailsCardProps> = ({
   author,
   version,
@@ -1193,6 +1261,7 @@ interface PreviewPanelProps {
   previewSteps: PreviewStep[];
 }
 
+/** Scrollable left column showing step-by-step instruction changes. */
 const PreviewPanel: React.FC<PreviewPanelProps> = ({ previewSteps }) => (
   <section className="review-preview glass-card">
     <header className="review-section-header">
@@ -1221,6 +1290,7 @@ interface WorkflowActionBarProps {
   children: React.ReactNode;
 }
 
+/** Full-width Reject / Approve (or Publish) buttons aligned to the right sidebar. */
 const WorkflowActionBar: React.FC<WorkflowActionBarProps> = ({ children }) => (
   <div className="workflow-sidebar-actions">{children}</div>
 );
@@ -1229,6 +1299,7 @@ interface OperatorImpactSectionProps {
   operators: OperatorOnShift[];
 }
 
+/** Publish screen sidebar: notify toggle and list of operators on shift. */
 const OperatorImpactSection: React.FC<OperatorImpactSectionProps> = ({ operators }) => {
   const [notifyOperators, setNotifyOperators] = useState(true);
   const operatorCount = operators.length;
@@ -1282,6 +1353,7 @@ interface RejectionFeedbackSectionProps {
   feedback: RejectionFeedback;
 }
 
+/** Rejection screen sidebar: reviewer info, reason tags, and feedback text. */
 const RejectionFeedbackSection: React.FC<RejectionFeedbackSectionProps> = ({
   feedback,
 }) => (
@@ -1317,6 +1389,8 @@ const RejectionFeedbackSection: React.FC<RejectionFeedbackSectionProps> = ({
   </section>
 );
 
+// --- Modals (reject confirmation, publish confirmation) ---
+
 interface RejectModalProps {
   version: string;
   authorName: string;
@@ -1324,6 +1398,7 @@ interface RejectModalProps {
   onSubmit: (submission: RejectionSubmission) => void;
 }
 
+/** Collect rejection reasons before opening the Rejection screen. */
 const RejectModal: React.FC<RejectModalProps> = ({
   version,
   authorName,
@@ -1457,6 +1532,7 @@ interface PublishConfirmModalProps {
   onConfirm: () => void;
 }
 
+/** Final confirmation before a version goes live. */
 const PublishConfirmModal: React.FC<PublishConfirmModalProps> = ({
   details,
   onClose,
@@ -1562,6 +1638,8 @@ const PublishConfirmModal: React.FC<PublishConfirmModalProps> = ({
   );
 };
 
+// --- Workflow screens (Review, Publish, Rejection) ---
+
 interface ReviewViewProps {
   entry: VersionEntry;
   onBack: () => void;
@@ -1569,6 +1647,7 @@ interface ReviewViewProps {
   onApprove: () => void;
 }
 
+/** Review a draft: checklist must be complete before Approve is enabled. */
 const ReviewView: React.FC<ReviewViewProps> = ({
   entry,
   onBack,
@@ -1667,6 +1746,7 @@ interface PublishViewProps {
   onPublishConfirm: () => void;
 }
 
+/** Publish an approved version; opens a confirm modal before going live. */
 const PublishView: React.FC<PublishViewProps> = ({
   entry,
   onBack,
@@ -1750,6 +1830,7 @@ interface RejectionViewProps {
   onGoToBuilder: () => void;
 }
 
+/** Shown after sending a rejection; displays feedback from the reject modal. */
 const RejectionView: React.FC<RejectionViewProps> = ({
   entry,
   submission,
@@ -1816,15 +1897,19 @@ const RejectionView: React.FC<RejectionViewProps> = ({
   );
 };
 
+/** Look up a single version entry by instruction id and entry id. */
 function findVersionEntry(instructionId: string, entryId: string): VersionEntry | undefined {
   return getVersionHistory(instructionId).entries.find((entry) => entry.id === entryId);
 }
+
+// --- Root component: screen routing and global actions ---
 
 export interface VersionsProps {
   onNavigateToBuilder?: () => void;
 }
 
 export const Versions: React.FC<VersionsProps> = ({ onNavigateToBuilder }) => {
+  // Which instruction and version entry the user is viewing.
   const [selectedInstructionId, setSelectedInstructionId] = useState<string | null>(
     null,
   );
@@ -1843,6 +1928,7 @@ export const Versions: React.FC<VersionsProps> = ({ onNavigateToBuilder }) => {
   );
   const [actionToast, setActionToast] = useState<ActionToastState | null>(null);
 
+  // Show a toast for 4.5s, then hide it automatically.
   const showActionToast = useCallback(
     (message: string, variant: ActionToastVariant = 'success') => {
       setActionToast({ message, variant });
@@ -1864,6 +1950,7 @@ export const Versions: React.FC<VersionsProps> = ({ onNavigateToBuilder }) => {
     return () => window.clearTimeout(timer);
   }, [actionToast]);
 
+  // Resolve selected items from ids (avoids storing full objects in state).
   const selectedInstruction = useMemo(
     () => INSTRUCTIONS.find((instruction) => instruction.id === selectedInstructionId),
     [selectedInstructionId],
@@ -1887,8 +1974,9 @@ export const Versions: React.FC<VersionsProps> = ({ onNavigateToBuilder }) => {
   const rejectModalEntry = useMemo(() => {
     if (!selectedInstructionId || !rejectModalEntryId) return undefined;
     return findVersionEntry(selectedInstructionId, rejectModalEntryId);
-  }, [selectedInstructionId, rejectModalEntryId]);
+  }, [selectedInstructionId, rejectModalEntryId]  );
 
+  // Review/Publish/Rejection screens use a fixed viewport height.
   const isWorkflowView = Boolean(
     selectedInstruction &&
       (selectedReviewEntry || selectedPublishEntry || selectedRejectionEntry),
@@ -1927,6 +2015,7 @@ export const Versions: React.FC<VersionsProps> = ({ onNavigateToBuilder }) => {
   const handleSendRejection = (submission: RejectionSubmission) => {
     if (!rejectModalEntryId || !rejectModalEntry) return;
 
+    // Save modal input, then open the Rejection screen.
     setRejectionSubmission(submission);
     setSelectedRejectionEntryId(rejectModalEntryId);
     setRejectModalEntryId(null);
@@ -1942,6 +2031,7 @@ export const Versions: React.FC<VersionsProps> = ({ onNavigateToBuilder }) => {
     if (!selectedPublishEntry) return;
 
     const { version } = selectedPublishEntry;
+    // Return to version history and confirm the publish action.
     setSelectedPublishEntryId(null);
     showActionToast(`${version} is now live and replaced the previous version.`);
   };
@@ -1966,6 +2056,7 @@ export const Versions: React.FC<VersionsProps> = ({ onNavigateToBuilder }) => {
       <div
         className={`dashboard-container${isWorkflowView ? ' dashboard-container--review' : ''}`}
       >
+        {/* Pick one screen based on current navigation state. */}
         {selectedInstruction && selectedRejectionEntry && rejectionSubmission ? (
           <RejectionView
             entry={selectedRejectionEntry}
