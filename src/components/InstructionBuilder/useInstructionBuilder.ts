@@ -1,17 +1,17 @@
 import { useState } from 'react';
 import React from 'react';
-import type { Step, Module, Product, CheckItem, StepImage, Annotation, OverrideMap, View, StepType } from './types';
-import { initialModules, initialProducts, initialOverrides } from './data';
+import type { Step, Module, Product, Configuration, CheckItem, StepImage, Annotation, View, StepType } from './types';
+import { initialModules, initialProducts } from './data';
 
 export function useInstructionBuilder() {
   // ── Core data ────────────────────────────────────────────────────────────────
   const [view, setView] = useState<View>('products');
   const [products, setProducts] = useState<Product[]>(initialProducts);
   const [modules, setModules] = useState<Module[]>(initialModules);
-  const [overrides, setOverrides] = useState<OverrideMap>(initialOverrides);
 
   // ── Navigation ───────────────────────────────────────────────────────────────
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
+  const [selectedConfigurationId, setSelectedConfigurationId] = useState<string | null>(null);
   const [selectedModuleId, setSelectedModuleId] = useState<string | null>(null);
   const [selectedStepId, setSelectedStepId] = useState<string | null>(null);
 
@@ -23,12 +23,10 @@ export function useInstructionBuilder() {
   const [renamingModuleId, setRenamingModuleId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState('');
   const [addProductDialogOpen, setAddProductDialogOpen] = useState(false);
-  const [sharedModuleWarning, setSharedModuleWarning] = useState(false);
 
   // ── Step editor state ────────────────────────────────────────────────────────
   const [stepFormDraft, setStepFormDraft] = useState<Partial<Step> | null>(null);
   const [activeStepTab, setActiveStepTab] = useState<'instruction' | 'visual' | 'check'>('instruction');
-  const [pendingStepSave, setPendingStepSave] = useState(false);
   const [activeTool, setActiveTool] = useState<'select' | 'rect' | 'circle' | 'arrow'>('select');
   const [activeColor, setActiveColor] = useState('#ef7d00');
   const [drawing, setDrawing] = useState<{ startX: number; startY: number; endX: number; endY: number } | null>(null);
@@ -36,18 +34,16 @@ export function useInstructionBuilder() {
 
   // ── Derived state ────────────────────────────────────────────────────────────
   const selectedProduct = products.find(p => p.id === selectedProductId) ?? null;
+  const selectedConfiguration: Configuration | null =
+    selectedProduct?.configurations.find(c => c.id === selectedConfigurationId) ?? null;
   const selectedModule = modules.find(m => m.id === selectedModuleId) ?? null;
 
-  const productModules: Module[] = selectedProduct
-    ? selectedProduct.moduleIds.map(id => modules.find(m => m.id === id)).filter(Boolean) as Module[]
-    : [];
+  const activeModuleIds: string[] = selectedConfiguration?.moduleIds ?? selectedProduct?.moduleIds ?? [];
 
-  const effectiveSteps: Step[] = selectedModule && selectedProductId
-    ? selectedModule.steps.map(step => {
-        const override = overrides[selectedProductId]?.[selectedModuleId!]?.[step.id];
-        return override ? { ...step, ...override } : step;
-      })
-    : [];
+  const productModules: Module[] = activeModuleIds
+    .map(id => modules.find(m => m.id === id)).filter(Boolean) as Module[];
+
+  const effectiveSteps: Step[] = selectedModule?.steps ?? [];
 
   const filteredProducts = products.filter(p =>
     p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -55,33 +51,70 @@ export function useInstructionBuilder() {
   );
 
   const libraryShared = modules.filter(m =>
-    m.isShared && !selectedProduct?.moduleIds.includes(m.id)
+    m.isShared && !activeModuleIds.includes(m.id)
   );
   const libraryFromOthers = modules.filter(m =>
-    !m.isShared && !selectedProduct?.moduleIds.includes(m.id)
+    !m.isShared && !activeModuleIds.includes(m.id)
   );
 
   // ── Utility predicates ───────────────────────────────────────────────────────
   const moduleUsageCount = (moduleId: string) =>
     products.filter(p => p.moduleIds.includes(moduleId)).length;
 
-  const stepHasFlag = (step: Step): boolean =>
-    step.action.trim() === '' &&
-    !step.imageUrl &&
-    !(step.images?.some(img => img.url));
-
-  const hasLocalOverride = (stepId: string) =>
-    !!(selectedProductId && selectedModuleId && overrides[selectedProductId]?.[selectedModuleId]?.[stepId]);
-
   // ── Navigation handlers ──────────────────────────────────────────────────────
   const handleSelectProduct = (id: string) => {
     setSelectedProductId(id);
+    setSelectedConfigurationId(null);
     setSelectedModuleId(null);
     setSelectedStepId(null);
     setStepFormDraft(null);
     setSearchTerm('');
     setIsLibraryOpen(false);
+    setView('configurations');
+  };
+
+  const handleSelectConfiguration = (id: string) => {
+    setSelectedConfigurationId(id);
+    setSelectedModuleId(null);
+    setSelectedStepId(null);
+    setStepFormDraft(null);
+    setIsLibraryOpen(false);
     setView('product-detail');
+  };
+
+  const handleAddConfiguration = (name: string) => {
+    if (!name.trim() || !selectedProductId) return;
+    const newCfg: Configuration = {
+      id: `cfg-${Date.now()}`,
+      name: name.trim(),
+      description: 'New configuration — add a description.',
+      moduleIds: selectedProduct?.moduleIds ?? [],
+    };
+    setProducts(prev => prev.map(p => p.id === selectedProductId
+      ? { ...p, configurations: [...p.configurations, newCfg] }
+      : p
+    ));
+  };
+
+  const handleBackFromConfigurations = () => {
+    setSelectedProductId(null);
+    setSelectedConfigurationId(null);
+    setSelectedModuleId(null);
+    setSelectedStepId(null);
+    setStepFormDraft(null);
+    setIsLibraryOpen(false);
+    setSearchTerm('');
+    setRightPanelMode('editor');
+    setView('products');
+  };
+
+  const handleBackToConfigurations = () => {
+    setSelectedModuleId(null);
+    setSelectedStepId(null);
+    setStepFormDraft(null);
+    setIsLibraryOpen(false);
+    setRightPanelMode('editor');
+    setView('configurations');
   };
 
   const handleSelectModule = (id: string) => {
@@ -95,6 +128,7 @@ export function useInstructionBuilder() {
 
   const handleBack = () => {
     setSelectedProductId(null);
+    setSelectedConfigurationId(null);
     setSelectedModuleId(null);
     setSelectedStepId(null);
     setStepFormDraft(null);
@@ -128,10 +162,6 @@ export function useInstructionBuilder() {
 
   const handleAddStep = () => {
     if (!selectedModule || !selectedModuleId) return;
-    if (selectedModule.isShared) {
-      setSharedModuleWarning(true);
-      return;
-    }
     const newStep: Step = {
       id: `step-${Date.now()}`,
       stepType: 'text',
@@ -155,7 +185,7 @@ export function useInstructionBuilder() {
 
   const handleDeleteStep = (stepId: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!selectedModuleId || selectedModule?.isShared) return;
+    if (!selectedModuleId) return;
     setModules(prev => prev.map(m => m.id === selectedModuleId
       ? { ...m, steps: m.steps.filter(s => s.id !== stepId) }
       : m
@@ -167,8 +197,36 @@ export function useInstructionBuilder() {
     }
   };
 
+  const handleRenameStep = (stepId: string, name: string) => {
+    if (!selectedModuleId) return;
+    const trimmed = name.trim() || undefined;
+    setModules(prev => prev.map(m => m.id === selectedModuleId
+      ? { ...m, steps: m.steps.map(s => s.id === stepId ? { ...s, name: trimmed } : s) }
+      : m
+    ));
+  };
+
+  const handleDuplicateStep = (stepId: string) => {
+    if (!selectedModuleId) return;
+    const step = selectedModule?.steps.find(s => s.id === stepId);
+    if (!step) return;
+    const copy: Step = {
+      ...step,
+      id: `step-${Date.now()}`,
+      name: step.name ? `${step.name} (copy)` : undefined,
+      images: step.images?.map(img => ({ ...img, id: `img-${Date.now()}-${Math.random()}`, annotations: [...img.annotations] })),
+    };
+    setModules(prev => prev.map(m => {
+      if (m.id !== selectedModuleId) return m;
+      const idx = m.steps.findIndex(s => s.id === stepId);
+      const steps = [...m.steps];
+      steps.splice(idx + 1, 0, copy);
+      return { ...m, steps };
+    }));
+  };
+
   const commitStepForm = () => {
-    if (!selectedStepId || !selectedProductId || !selectedModuleId || !stepFormDraft) return;
+    if (!selectedStepId || !selectedModuleId || !stepFormDraft) return;
     const firstImg = (stepFormDraft.images ?? [])[0];
     const derivedType: StepType = (firstImg?.url || stepFormDraft.imageUrl) ? 'visual' : 'text';
     const firstCheck = (stepFormDraft.checks ?? [])[0];
@@ -183,50 +241,32 @@ export function useInstructionBuilder() {
       caption: firstImg?.caption ?? stepFormDraft.caption ?? '',
       annotations: firstImg?.annotations ?? stepFormDraft.annotations ?? [],
     };
-    if (selectedModule?.isShared) {
-      setOverrides(prev => ({
-        ...prev,
-        [selectedProductId]: {
-          ...(prev[selectedProductId] ?? {}),
-          [selectedModuleId]: {
-            ...(prev[selectedProductId]?.[selectedModuleId] ?? {}),
-            [selectedStepId]: { ...draft, isLocalOverride: true },
-          },
-        },
-      }));
-    } else {
-      setModules(prev => prev.map(m => m.id === selectedModuleId
-        ? { ...m, steps: m.steps.map(s => s.id === selectedStepId ? { ...s, ...draft } : s) }
-        : m
-      ));
-    }
-    setPendingStepSave(false);
+    setModules(prev => prev.map(m => m.id === selectedModuleId
+      ? { ...m, steps: m.steps.map(s => s.id === selectedStepId ? { ...s, ...draft } : s) }
+      : m
+    ));
     setSelectedStepId(null);
     setStepFormDraft(null);
     setView('product-detail');
   };
 
   const handleDoneStepEditor = () => {
-    if (!selectedStepId || !selectedProductId || !selectedModuleId || !stepFormDraft) return;
-    if (selectedModule?.isShared && !hasLocalOverride(selectedStepId)) {
-      setPendingStepSave(true);
-      return;
-    }
+    if (!selectedStepId || !selectedModuleId || !stepFormDraft) return;
     commitStepForm();
   };
 
   // ── Check item handlers ──────────────────────────────────────────────────────
   const handleAddCheckItem = (type: CheckItem['type']) => {
     const newItem: CheckItem = type === 'qa'
-      ? { id: `ck-${Date.now()}`, type, label: '', options: ['', ''] }
-      : { id: `ck-${Date.now()}`, type, label: '' };
+      ? { id: `ck-${Date.now()}`, type, title: '', label: '', options: ['', ''] }
+      : { id: `ck-${Date.now()}`, type, title: '', label: '' };
     setStepFormDraft(prev => prev ? { ...prev, checks: [...(prev.checks ?? []), newItem] } : prev);
   };
 
-  const handleUpdateCheckItem = (id: string, label: string) => {
+  const handleUpdateCheckItem = (id: string, patch: Partial<Pick<CheckItem, 'label' | 'title'>>) => {
     setStepFormDraft(prev => prev ? {
       ...prev,
-      checks: (prev.checks ?? []).map(c => c.id === id ? { ...c, label } : c),
+      checks: (prev.checks ?? []).map(c => c.id === id ? { ...c, ...patch } : c),
     } : prev);
   };
 
@@ -367,53 +407,77 @@ export function useInstructionBuilder() {
   };
 
   // ── Module handlers ──────────────────────────────────────────────────────────
-  const handleToggleModuleStatus = (moduleId: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    setModules(prev => prev.map(m => m.id === moduleId
-      ? { ...m, status: m.status === 'live' ? 'draft' : 'live' }
-      : m
-    ));
-  };
-
   const handleAddCustomModule = () => {
     if (!selectedProductId) return;
     const newModule: Module = {
       id: `custom-${Date.now()}`,
       name: 'New Module',
       description: 'Add a description for this module.',
-      status: 'draft',
       isShared: false,
       steps: [],
     };
     setModules(prev => [...prev, newModule]);
-    setProducts(prev => prev.map(p => p.id === selectedProductId
-      ? { ...p, moduleIds: [...p.moduleIds, newModule.id] }
-      : p
-    ));
+    if (selectedConfigurationId) {
+      setProducts(prev => prev.map(p => p.id === selectedProductId
+        ? { ...p, configurations: p.configurations.map(c => c.id === selectedConfigurationId
+            ? { ...c, moduleIds: [...c.moduleIds, newModule.id] }
+            : c) }
+        : p
+      ));
+    } else {
+      setProducts(prev => prev.map(p => p.id === selectedProductId
+        ? { ...p, moduleIds: [...p.moduleIds, newModule.id] }
+        : p
+      ));
+    }
     handleSelectModule(newModule.id);
   };
 
   const handleAddModuleFromLibrary = (moduleId: string) => {
     if (!selectedProductId) return;
-    if (selectedProduct?.moduleIds.includes(moduleId)) return;
-    setProducts(prev => prev.map(p => p.id === selectedProductId
-      ? { ...p, moduleIds: [...p.moduleIds, moduleId] }
-      : p
-    ));
+    if (activeModuleIds.includes(moduleId)) return;
+    if (selectedConfigurationId) {
+      setProducts(prev => prev.map(p => p.id === selectedProductId
+        ? { ...p, configurations: p.configurations.map(c => c.id === selectedConfigurationId
+            ? { ...c, moduleIds: [...c.moduleIds, moduleId] }
+            : c) }
+        : p
+      ));
+    } else {
+      setProducts(prev => prev.map(p => p.id === selectedProductId
+        ? { ...p, moduleIds: [...p.moduleIds, moduleId] }
+        : p
+      ));
+    }
     setIsLibraryOpen(false);
   };
 
   const handleRemoveModule = (moduleId: string) => {
     if (!selectedProductId) return;
-    setProducts(prev => prev.map(p => p.id === selectedProductId
-      ? { ...p, moduleIds: p.moduleIds.filter(id => id !== moduleId) }
-      : p
-    ));
+    if (selectedConfigurationId) {
+      setProducts(prev => prev.map(p => p.id === selectedProductId
+        ? { ...p, configurations: p.configurations.map(c => c.id === selectedConfigurationId
+            ? { ...c, moduleIds: c.moduleIds.filter(id => id !== moduleId) }
+            : c) }
+        : p
+      ));
+    } else {
+      setProducts(prev => prev.map(p => p.id === selectedProductId
+        ? { ...p, moduleIds: p.moduleIds.filter(id => id !== moduleId) }
+        : p
+      ));
+    }
     if (selectedModuleId === moduleId) {
       setSelectedModuleId(null);
       setSelectedStepId(null);
       setStepFormDraft(null);
     }
+  };
+
+  const handlePublishToLibrary = (moduleId: string) => {
+    setModules(prev =>
+      prev.map(m => m.id === moduleId ? { ...m, isShared: true } : m)
+    );
   };
 
   const handleDuplicateModule = (moduleId: string) => {
@@ -426,14 +490,39 @@ export function useInstructionBuilder() {
       id: newId,
       name: `${source.name} [Copy]`,
       isShared: false,
-      status: 'draft',
       steps: source.steps.map(s => ({ ...s, id: `${s.id}-copy` })),
     };
     setModules(prev => [...prev, duplicate]);
-    setProducts(prev => prev.map(p => p.id === selectedProductId
-      ? { ...p, moduleIds: [...p.moduleIds, newId] }
-      : p
-    ));
+    if (selectedConfigurationId) {
+      setProducts(prev => prev.map(p => p.id === selectedProductId
+        ? { ...p, configurations: p.configurations.map(c => c.id === selectedConfigurationId
+            ? { ...c, moduleIds: [...c.moduleIds, newId] }
+            : c) }
+        : p
+      ));
+    } else {
+      setProducts(prev => prev.map(p => p.id === selectedProductId
+        ? { ...p, moduleIds: [...p.moduleIds, newId] }
+        : p
+      ));
+    }
+  };
+
+  const handleDeleteModule = (moduleId: string) => {
+    setModules(prev => prev.filter(m => m.id !== moduleId));
+    setProducts(prev => prev.map(p => ({
+      ...p,
+      moduleIds: p.moduleIds.filter(id => id !== moduleId),
+      configurations: p.configurations.map(c => ({
+        ...c,
+        moduleIds: c.moduleIds.filter(id => id !== moduleId),
+      })),
+    })));
+    if (selectedModuleId === moduleId) {
+      setSelectedModuleId(null);
+      setSelectedStepId(null);
+      setStepFormDraft(null);
+    }
   };
 
   const handleStartRename = (moduleId: string, currentName: string) => {
@@ -460,16 +549,69 @@ export function useInstructionBuilder() {
     const copy: Module = {
       ...source,
       id: newId,
-      status: 'draft',
       isShared: false,
       steps: source.steps.map(s => ({ ...s, id: `${s.id}-cp` })),
     };
     setModules(prev => [...prev, copy]);
-    setProducts(prev => prev.map(p => p.id === selectedProductId
-      ? { ...p, moduleIds: [...p.moduleIds, newId] }
-      : p
-    ));
+    if (selectedConfigurationId) {
+      setProducts(prev => prev.map(p => p.id === selectedProductId
+        ? { ...p, configurations: p.configurations.map(c => c.id === selectedConfigurationId
+            ? { ...c, moduleIds: [...c.moduleIds, newId] }
+            : c) }
+        : p
+      ));
+    } else {
+      setProducts(prev => prev.map(p => p.id === selectedProductId
+        ? { ...p, moduleIds: [...p.moduleIds, newId] }
+        : p
+      ));
+    }
     setIsLibraryOpen(false);
+  };
+
+  const handleAddLibraryModule = (moduleId: string) => {
+    const source = modules.find(m => m.id === moduleId);
+    if (!source) return;
+    if (source.isShared) {
+      handleAddModuleFromLibrary(moduleId);
+    } else {
+      handleAddModuleCopy(moduleId);
+    }
+  };
+
+  // ── Drag-and-drop handlers ───────────────────────────────────────────────────
+  const handleReorderModules = (newIds: string[]) => {
+    if (selectedConfigurationId) {
+      setProducts(prev => prev.map(p => p.id === selectedProductId
+        ? { ...p, configurations: p.configurations.map(c => c.id === selectedConfigurationId
+            ? { ...c, moduleIds: newIds } : c) }
+        : p
+      ));
+    } else if (selectedProductId) {
+      setProducts(prev => prev.map(p => p.id === selectedProductId
+        ? { ...p, moduleIds: newIds } : p
+      ));
+    }
+  };
+
+  const handleReorderSteps = (moduleId: string, newSteps: Step[]) => {
+    setModules(prev => prev.map(m => m.id === moduleId ? { ...m, steps: newSteps } : m));
+  };
+
+  const handleMoveStep = (stepId: string, fromModuleId: string, toModuleId: string) => {
+    const fromMod = modules.find(m => m.id === fromModuleId);
+    const toMod = modules.find(m => m.id === toModuleId);
+    if (!fromMod || !toMod) return;
+    const step = fromMod.steps.find(s => s.id === stepId);
+    if (!step) return;
+    setModules(prev => prev.map(m => {
+      if (m.id === fromModuleId) return { ...m, steps: m.steps.filter(s => s.id !== stepId) };
+      if (m.id === toModuleId) return { ...m, steps: [...m.steps, step] };
+      return m;
+    }));
+    if (selectedStepId === stepId) {
+      setSelectedModuleId(toModuleId);
+    }
   };
 
   // ── Product handlers ─────────────────────────────────────────────────────────
@@ -485,6 +627,7 @@ export function useInstructionBuilder() {
       description: 'New product — add a description.',
       imageUrl: null,
       moduleIds: [],
+      configurations: [],
     };
     setProducts(prev => [...prev, newProduct]);
     setAddProductDialogOpen(false);
@@ -495,9 +638,9 @@ export function useInstructionBuilder() {
     // View
     view,
     // Data
-    products, modules, overrides,
+    products, modules,
     // Navigation state
-    selectedProductId, selectedModuleId, selectedStepId,
+    selectedProductId, selectedConfigurationId, selectedModuleId, selectedStepId,
     // UI state
     searchTerm, setSearchTerm,
     isLibraryOpen, setIsLibraryOpen,
@@ -505,25 +648,24 @@ export function useInstructionBuilder() {
     openMenuModuleId, setOpenMenuModuleId,
     renamingModuleId, renameValue, setRenameValue,
     addProductDialogOpen, setAddProductDialogOpen,
-    sharedModuleWarning, setSharedModuleWarning,
     // Step editor state
     stepFormDraft, setStepFormDraft,
     activeStepTab, setActiveStepTab,
-    pendingStepSave, setPendingStepSave,
     activeTool, setActiveTool,
     activeColor, setActiveColor,
     drawing,
     activeImageIdx, setActiveImageIdx,
     // Derived
-    selectedProduct, selectedModule,
+    selectedProduct, selectedConfiguration, selectedModule,
     productModules, effectiveSteps,
     filteredProducts, libraryShared, libraryFromOthers,
     // Predicates
-    moduleUsageCount, stepHasFlag, hasLocalOverride,
+    moduleUsageCount,
     // Navigation handlers
-    handleBack, handleSelectProduct, handleSelectModule,
+    handleBack, handleSelectProduct, handleSelectConfiguration,
+    handleAddConfiguration, handleBackFromConfigurations, handleBackToConfigurations, handleSelectModule,
     // Step handlers
-    handleSelectStep, handleAddStep, handleDeleteStep,
+    handleSelectStep, handleAddStep, handleDeleteStep, handleRenameStep, handleDuplicateStep,
     commitStepForm, handleDoneStepEditor,
     // Check item handlers
     handleAddCheckItem, handleUpdateCheckItem, handleDeleteCheckItem,
@@ -535,9 +677,11 @@ export function useInstructionBuilder() {
     handleUndoAnnotation, handleClearAnnotations,
     getPreviewAnnotation,
     // Module handlers
-    handleToggleModuleStatus, handleAddCustomModule,
-    handleAddModuleFromLibrary, handleRemoveModule,
-    handleDuplicateModule, handleStartRename, handleCommitRename, handleCancelRename, handleAddModuleCopy,
+    handleAddCustomModule,
+    handleAddModuleFromLibrary, handleAddLibraryModule, handleRemoveModule,
+    handleDuplicateModule, handleDeleteModule, handleStartRename, handleCommitRename, handleCancelRename, handleAddModuleCopy,
+    handlePublishToLibrary,
+    handleReorderModules, handleReorderSteps, handleMoveStep,
     // Product handlers
     handleAddProduct, handleConfirmAddProduct,
   };

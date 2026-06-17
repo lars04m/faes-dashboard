@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import {
   ArrowLeft, Plus, X, Image as ImageIcon, Undo2,
 } from 'lucide-react';
-import type { Step, Module, Product, Annotation, CheckItem, StepImage } from './types';
-import { ANNOTATION_COLORS, ANNOTATION_TOOLS } from './constants';
+import type { Step, Module, Product, Configuration, Annotation, CheckItem, StepImage } from './types';
+import { ANNOTATION_COLORS, ANNOTATION_TOOLS, MARKDOWN_TOOLS, type MarkdownAction } from './constants';
+import { MarkdownPreview } from './markdownPreview';
 
 interface Props {
   stepFormDraft: Partial<Step>;
@@ -12,10 +13,10 @@ interface Props {
   selectedStepId: string | null;
   selectedModule: Module | null;
   selectedProduct: Product | null;
+  selectedConfiguration: Configuration | null;
   activeTool: 'select' | 'rect' | 'circle' | 'arrow';
   activeColor: string;
   activeImageIdx: number;
-  hasLocalOverride: (stepId: string) => boolean;
   onTabChange: (tab: 'instruction' | 'visual' | 'check') => void;
   onFieldChange: (patch: Partial<Step>) => void;
   onDone: () => void;
@@ -26,7 +27,7 @@ interface Props {
   onPointerUp: (idx: number) => void;
   getPreviewAnnotation: () => Annotation | undefined;
   onAddCheckItem: (type: CheckItem['type']) => void;
-  onUpdateCheckItem: (id: string, label: string) => void;
+  onUpdateCheckItem: (id: string, patch: Partial<Pick<CheckItem, 'label' | 'title'>>) => void;
   onDeleteCheckItem: (id: string) => void;
   onUpdateQaOption: (id: string, oi: number, val: string) => void;
   onAddQaOption: (id: string) => void;
@@ -73,6 +74,43 @@ const AnnotationSvg: React.FC<AnnotationSvgProps> = ({ annotations, previewAnnot
   );
 };
 
+function applyMarkdownAction(
+  current: string,
+  start: number,
+  end: number,
+  action: MarkdownAction,
+): { value: string; selectionStart: number; selectionEnd: number } {
+  const selected = current.slice(start, end);
+
+  const wrap = (before: string, after: string, placeholder: string) => {
+    const inner = selected || placeholder;
+    const value = current.slice(0, start) + before + inner + after + current.slice(end);
+    const selectionStart = start + before.length;
+    const selectionEnd = selectionStart + inner.length;
+    return { value, selectionStart, selectionEnd };
+  };
+
+  const insertAtLineStart = (prefix: string) => {
+    const lineStart = current.lastIndexOf('\n', start - 1) + 1;
+    const value = current.slice(0, lineStart) + prefix + current.slice(lineStart);
+    return {
+      value,
+      selectionStart: start + prefix.length,
+      selectionEnd: end + prefix.length,
+    };
+  };
+
+  switch (action) {
+    case 'bold': return wrap('**', '**', 'bold text');
+    case 'italic': return wrap('*', '*', 'italic text');
+    case 'code': return wrap('`', '`', 'code');
+    case 'link': return wrap('[', '](url)', 'link text');
+    case 'heading': return insertAtLineStart('## ');
+    case 'bullet': return insertAtLineStart('- ');
+    case 'ordered': return insertAtLineStart('1. ');
+  }
+}
+
 // ── StepEditorView ───────────────────────────────────────────────────────────
 
 export const StepEditorView: React.FC<Props> = ({
@@ -82,10 +120,10 @@ export const StepEditorView: React.FC<Props> = ({
   selectedStepId,
   selectedModule,
   selectedProduct,
+  selectedConfiguration,
   activeTool,
   activeColor,
   activeImageIdx,
-  hasLocalOverride,
   onTabChange,
   onFieldChange,
   onDone,
@@ -108,8 +146,26 @@ export const StepEditorView: React.FC<Props> = ({
   onUndoAnnotation,
   onClearAnnotations,
 }) => {
+  const instructionRef = useRef<HTMLTextAreaElement>(null);
   const stepIdx = effectiveSteps.findIndex(s => s.id === selectedStepId);
   const setField = (patch: Partial<Step>) => onFieldChange(patch);
+
+  const handleMarkdownAction = (action: MarkdownAction) => {
+    const textarea = instructionRef.current;
+    if (!textarea) return;
+    const current = stepFormDraft.action ?? '';
+    const { value, selectionStart, selectionEnd } = applyMarkdownAction(
+      current,
+      textarea.selectionStart,
+      textarea.selectionEnd,
+      action,
+    );
+    setField({ action: value });
+    requestAnimationFrame(() => {
+      textarea.focus();
+      textarea.setSelectionRange(selectionStart, selectionEnd);
+    });
+  };
 
   const hasInstruction = (stepFormDraft.action ?? '').trim().length > 0;
   const checks = stepFormDraft.checks ?? [];
@@ -124,7 +180,9 @@ export const StepEditorView: React.FC<Props> = ({
           <ArrowLeft size={15} /> {selectedModule?.name}
         </button>
         <div className="visual-editor-topbar-title">
-          {selectedProduct?.name} / {selectedModule?.name} / Step {stepIdx + 1}
+          {selectedProduct?.name}
+          {selectedConfiguration && ` / ${selectedConfiguration.name}`}
+          {` / ${selectedModule?.name} / Step ${stepIdx + 1}`}
         </div>
         <button className="btn-primary step-editor-done-btn" onClick={onDone}>
           Done
@@ -143,7 +201,7 @@ export const StepEditorView: React.FC<Props> = ({
 
       {/* Tab bar */}
       <div className="step-editor-tabbar">
-        {(['instruction', 'visual', 'check'] as const).map(tab => (
+        {(['visual', 'instruction', 'check'] as const).map(tab => (
           <button
             key={tab}
             className={`step-editor-tab ${activeStepTab === tab ? 'active' : ''}`}
@@ -154,12 +212,6 @@ export const StepEditorView: React.FC<Props> = ({
             {tab === 'check' && <>{checks.length > 0 && <span className="step-tab-dot" />}Check</>}
           </button>
         ))}
-        {selectedModule?.isShared && !hasLocalOverride(selectedStepId ?? '') && (
-          <span className="badge badge-info step-editor-override-badge">Shared — editing creates override</span>
-        )}
-        {hasLocalOverride(selectedStepId ?? '') && (
-          <span className="badge badge-override step-editor-override-badge">Custom override</span>
-        )}
       </div>
 
       {/* Main body */}
@@ -168,14 +220,42 @@ export const StepEditorView: React.FC<Props> = ({
 
           {/* ── Instruction tab ── */}
           {activeStepTab === 'instruction' && (
-            <div className="step-tab-content">
-              <textarea
-                className="form-input step-instruction-textarea"
-                value={stepFormDraft.action ?? ''}
-                placeholder="What should the operator do? e.g. Wipe down all outer surfaces with a lint-free cloth…"
-                onChange={e => setField({ action: e.target.value })}
-                autoFocus
-              />
+            <div className="step-tab-content step-instruction-tab">
+              <div className="step-instruction-editor-layout">
+                <div className="step-instruction-editor-pane">
+                  <span className="step-instruction-pane-label">Write</span>
+                  <div className="step-visual-annotation-toolbar step-instruction-markdown-toolbar">
+                    {MARKDOWN_TOOLS.map(({ action, Icon, label }, idx) => (
+                      <React.Fragment key={action}>
+                        {idx === 3 && <div className="visual-tool-sep" />}
+                        <button
+                          type="button"
+                          className="step-ann-tool-btn"
+                          onClick={() => handleMarkdownAction(action)}
+                          title={label}
+                        >
+                          <Icon size={16} />
+                          <span>{label}</span>
+                        </button>
+                      </React.Fragment>
+                    ))}
+                  </div>
+                  <textarea
+                    ref={instructionRef}
+                    className="form-input step-instruction-textarea"
+                    value={stepFormDraft.action ?? ''}
+                    placeholder="What should the operator do? e.g. Wipe down all outer surfaces with a lint-free cloth…"
+                    onChange={e => setField({ action: e.target.value })}
+                    autoFocus
+                  />
+                </div>
+                <div className="step-instruction-preview-pane">
+                  <span className="step-instruction-pane-label">Preview</span>
+                  <div className="step-instruction-preview">
+                    <MarkdownPreview content={stepFormDraft.action ?? ''} />
+                  </div>
+                </div>
+              </div>
             </div>
           )}
 
@@ -320,10 +400,16 @@ export const StepEditorView: React.FC<Props> = ({
                         <div className="step-check-item-type step-check-item-type-qa">Q</div>
                         <div className="step-check-item-body">
                           <input
+                            className="form-input step-check-item-title"
+                            value={item.title ?? ''}
+                            placeholder="Title (optional)"
+                            onChange={e => onUpdateCheckItem(item.id, { title: e.target.value })}
+                          />
+                          <input
                             className="form-input step-check-item-label"
                             value={item.label}
                             placeholder="e.g. What is the condition of the outer seal?"
-                            onChange={e => onUpdateCheckItem(item.id, e.target.value)}
+                            onChange={e => onUpdateCheckItem(item.id, { label: e.target.value })}
                           />
                           <div className="step-qa-options">
                             {(item.options ?? []).map((opt, oi) => (
@@ -346,7 +432,6 @@ export const StepEditorView: React.FC<Props> = ({
                               <Plus size={11} /> Add option
                             </button>
                           </div>
-                          <span className="step-check-item-badge">Question</span>
                         </div>
                         <button className="step-check-item-delete" onClick={() => onDeleteCheckItem(item.id)}>
                           <X size={13} />
@@ -361,6 +446,12 @@ export const StepEditorView: React.FC<Props> = ({
                         </div>
                         <div className="step-check-item-body">
                           <input
+                            className="form-input step-check-item-title"
+                            value={item.title ?? ''}
+                            placeholder="Title (optional)"
+                            onChange={e => onUpdateCheckItem(item.id, { title: e.target.value })}
+                          />
+                          <input
                             className="form-input step-check-item-label"
                             value={item.label}
                             placeholder={
@@ -368,11 +459,8 @@ export const StepEditorView: React.FC<Props> = ({
                               : item.type === 'measurement' ? 'e.g. Weight (g)'
                               : 'e.g. Note any damage found'
                             }
-                            onChange={e => onUpdateCheckItem(item.id, e.target.value)}
+                            onChange={e => onUpdateCheckItem(item.id, { label: e.target.value })}
                           />
-                          <span className="step-check-item-badge">
-                            {item.type === 'checkbox' ? 'Checkbox' : item.type === 'measurement' ? 'Measurement' : 'Text input'}
-                          </span>
                         </div>
                         <button className="step-check-item-delete" onClick={() => onDeleteCheckItem(item.id)}>
                           <X size={13} />

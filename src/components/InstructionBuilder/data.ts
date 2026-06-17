@@ -1,8 +1,8 @@
-import type { Module, Product, OverrideMap } from './types';
+import type { Module, Product } from './types';
 
 export const initialModules: Module[] = [
   {
-    id: 'lm-1', name: 'Visual Inspection', isShared: true, status: 'live',
+    id: 'lm-1', name: 'Visual Inspection', isShared: true,
     description: 'Check outer packaging integrity, seams, and label legibility before processing.',
     steps: [
       { id: 'lm-1-s1', stepType: 'text', action: 'Check outer packaging for damage or deformation', imageUrl: 'https://placehold.co/400x220?text=Outer+Packaging', caption: '', checkType: 'checkbox' },
@@ -11,7 +11,7 @@ export const initialModules: Module[] = [
     ],
   },
   {
-    id: 'lm-2', name: 'Cleaning Protocol', isShared: true, status: 'live',
+    id: 'lm-2', name: 'Cleaning Protocol', isShared: true,
     description: 'Standard surface cleaning procedure using approved materials before repackaging.',
     steps: [
       { id: 'lm-2-s1', stepType: 'text', action: 'Wipe down all outer surfaces with lint-free cloth', imageUrl: 'https://placehold.co/400x220?text=Cleaning+Step+1', caption: '', checkType: 'none' },
@@ -20,7 +20,7 @@ export const initialModules: Module[] = [
     ],
   },
   {
-    id: 'lm-3', name: 'Layer Check', isShared: true, status: 'live',
+    id: 'lm-3', name: 'Layer Check', isShared: true,
     description: 'Count and verify internal foam layers and ESD protection are correctly stacked.',
     steps: [
       { id: 'lm-3-s1', stepType: 'text', action: 'Count internal foam layers — confirm matches specification', imageUrl: 'https://placehold.co/400x220?text=Foam+Layers', caption: '', checkType: 'measurement' },
@@ -28,7 +28,7 @@ export const initialModules: Module[] = [
     ],
   },
   {
-    id: 'lm-4', name: 'Label Verification', isShared: true, status: 'draft',
+    id: 'lm-4', name: 'Label Verification', isShared: true,
     description: 'Match serial number against manifest and scan barcode for database confirmation.',
     steps: [
       { id: 'lm-4-s1', stepType: 'text', action: 'Match serial number against printed manifest', imageUrl: 'https://placehold.co/400x220?text=Serial+Match', caption: '', checkType: 'checkbox' },
@@ -36,7 +36,7 @@ export const initialModules: Module[] = [
     ],
   },
   {
-    id: 'lm-5', name: 'ESD Safety Check', isShared: true, status: 'live',
+    id: 'lm-5', name: 'ESD Safety Check', isShared: true,
     description: 'Verify ESD wrist strap and mat continuity before handling sensitive components.',
     steps: [
       { id: 'lm-5-s1', stepType: 'text', action: '', imageUrl: 'https://placehold.co/400x220?text=Wrist+Strap', caption: '', checkType: 'checkbox' },
@@ -44,7 +44,7 @@ export const initialModules: Module[] = [
     ],
   },
   {
-    id: 'lm-6', name: 'Missing Layer Procedure', isShared: false, status: 'live',
+    id: 'lm-6', name: 'Missing Layer Procedure', isShared: false,
     description: 'Corrective procedure when a foam layer is missing from the T-8 packaging set.',
     steps: [
       { id: 'lm-6-s1', stepType: 'text', action: 'Flag the unit and remove from triage line', imageUrl: 'https://placehold.co/400x220?text=Flag+Unit', caption: '', checkType: 'checkbox' },
@@ -53,7 +53,7 @@ export const initialModules: Module[] = [
     ],
   },
   {
-    id: 'lm-7', name: 'High-Value Unboxing', isShared: false, status: 'draft',
+    id: 'lm-7', name: 'High-Value Unboxing', isShared: false,
     description: 'Special unboxing procedure for high-value T-8 units requiring dual sign-off.',
     steps: [
       { id: 'lm-7-s1', stepType: 'text', action: 'Open anti-static outer sleeve with ceramic cutter only', imageUrl: 'https://placehold.co/400x220?text=Ceramic+Cutter', caption: '', checkType: 'checkbox' },
@@ -63,17 +63,39 @@ export const initialModules: Module[] = [
 ];
 
 export const initialProducts: Product[] = [
-  { id: 'p-1', name: 'AXK Color Multi', description: 'Multi-colour packaging variant for the AXK line. Requires cleaning and visual check.', imageUrl: null, moduleIds: ['lm-1', 'lm-2'] },
-  { id: 'p-2', name: 'T-8', description: 'Standard RTM triage packaging unit — highest volume on the line.', imageUrl: null, moduleIds: ['lm-1', 'lm-3', 'lm-5', 'lm-6', 'lm-7'] },
-  { id: 'p-3', name: 'CargoCast Kit', description: 'Heavy-duty cargo packaging requiring label verification before dispatch.', imageUrl: null, moduleIds: ['lm-2', 'lm-4'] },
-  { id: 'p-4', name: 'STBDeep Layer', description: 'Set-top-box unit with deep foam layering — ESD sensitive.', imageUrl: null, moduleIds: ['lm-1', 'lm-5'] },
-  { id: 'p-5', name: 'CoolDust 360', description: 'Cooling unit packaging — standard cleaning and layer count required.', imageUrl: null, moduleIds: ['lm-2', 'lm-3'] },
+  {
+    id: 'p-1', name: 'AXK Color Multi', description: 'Multi-colour packaging variant for the AXK line. Requires cleaning and visual check.', imageUrl: null, moduleIds: ['lm-1', 'lm-2'],
+    configurations: [
+      { id: 'cfg-p1-1', name: 'Standard', description: 'Normal packaging condition — all layers present.', moduleIds: ['lm-1', 'lm-2'] },
+      { id: 'cfg-p1-2', name: 'Missing Layer', description: 'One foam layer absent from the packaging set.', moduleIds: ['lm-1'] },
+    ],
+  },
+  {
+    id: 'p-2', name: 'T-8', description: 'Standard RTM triage packaging unit — highest volume on the line.', imageUrl: null, moduleIds: ['lm-1', 'lm-3', 'lm-5', 'lm-6', 'lm-7'],
+    configurations: [
+      { id: 'cfg-p2-1', name: 'Standard', description: 'Default triage path — all protective layers intact.', moduleIds: ['lm-1', 'lm-3', 'lm-5'] },
+      { id: 'cfg-p2-2', name: 'Missing Layer', description: 'Corrective route when a foam layer is missing.', moduleIds: ['lm-1', 'lm-3', 'lm-5', 'lm-6'] },
+      { id: 'cfg-p2-3', name: 'High-Value Unit', description: 'Dual sign-off required — special unboxing procedure.', moduleIds: ['lm-1', 'lm-3', 'lm-5', 'lm-7'] },
+    ],
+  },
+  {
+    id: 'p-3', name: 'CargoCast Kit', description: 'Heavy-duty cargo packaging requiring label verification before dispatch.', imageUrl: null, moduleIds: ['lm-2', 'lm-4'],
+    configurations: [
+      { id: 'cfg-p3-1', name: 'Standard', description: 'Normal dispatch condition — label and cleaning check.', moduleIds: ['lm-2', 'lm-4'] },
+      { id: 'cfg-p3-2', name: 'Damaged Sticker', description: 'Label is partially damaged — re-print and re-verify required.', moduleIds: ['lm-2', 'lm-4'] },
+    ],
+  },
+  {
+    id: 'p-4', name: 'STBDeep Layer', description: 'Set-top-box unit with deep foam layering — ESD sensitive.', imageUrl: null, moduleIds: ['lm-1', 'lm-5'],
+    configurations: [
+      { id: 'cfg-p4-1', name: 'Standard', description: 'Full ESD protection present.', moduleIds: ['lm-1', 'lm-5'] },
+    ],
+  },
+  {
+    id: 'p-5', name: 'CoolDust 360', description: 'Cooling unit packaging — standard cleaning and layer count required.', imageUrl: null, moduleIds: ['lm-2', 'lm-3'],
+    configurations: [
+      { id: 'cfg-p5-1', name: 'Standard', description: 'All cooling layers present and intact.', moduleIds: ['lm-2', 'lm-3'] },
+    ],
+  },
 ];
 
-export const initialOverrides: OverrideMap = {
-  'p-2': {
-    'lm-1': {
-      'lm-1-s1': { action: 'T-8 specific: check outer casing seam FIRST before general inspection', isLocalOverride: true },
-    },
-  },
-};

@@ -61,7 +61,7 @@ export const ProductsView: React.FC<Props> = ({
       ) : (
         <div className="product-grid">
           {filteredProducts.map(product => {
-            const modCount = product.moduleIds.length;
+            const configCount = product.configurations.length;
             return (
               <div key={product.id} className="product-card" onClick={() => onSelectProduct(product.id)}>
                 <div className="product-card-image">
@@ -72,7 +72,7 @@ export const ProductsView: React.FC<Props> = ({
                   <div className="product-card-desc">{product.description}</div>
                 </div>
                 <div className="product-card-footer">
-                  <span className="product-card-meta">{modCount} module{modCount !== 1 ? 's' : ''}</span>
+                  <span className="product-card-meta">{configCount} configuration{configCount !== 1 ? 's' : ''}</span>
                   <ChevronRight size={15} className="product-card-arrow" />
                 </div>
               </div>
