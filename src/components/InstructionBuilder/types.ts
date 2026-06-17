@@ -3,6 +3,7 @@ export type StepType = 'text' | 'visual' | 'video' | 'markdown';
 export interface CheckItem {
   id: string;
   type: 'checkbox' | 'measurement' | 'text' | 'qa';
+  title?: string;
   label: string;
   options?: string[];
 }
@@ -35,16 +36,21 @@ export interface Step {
   checks?: CheckItem[];
   annotations?: Annotation[];
   images?: StepImage[];
-  isLocalOverride?: boolean;
 }
 
 export interface Module {
   id: string;
   name: string;
   description: string;
-  status: 'draft' | 'live';
   isShared: boolean;
   steps: Step[];
+}
+
+export interface Configuration {
+  id: string;
+  name: string;
+  description: string;
+  moduleIds: string[];
 }
 
 export interface Product {
@@ -53,9 +59,7 @@ export interface Product {
   description: string;
   imageUrl: string | null;
   moduleIds: string[];
+  configurations: Configuration[];
 }
 
-// overrides[productId][moduleId][stepId] = Partial<Step>
-export type OverrideMap = Record<string, Record<string, Record<string, Partial<Step>>>>;
-
-export type View = 'products' | 'product-detail' | 'step-editor';
+export type View = 'products' | 'configurations' | 'product-detail' | 'step-editor';

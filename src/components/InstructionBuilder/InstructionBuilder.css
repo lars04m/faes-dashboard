@@ -591,38 +591,6 @@
   margin-top: 0.4rem;
 }
 
-/* ── Custom override dot ─────────────────────────────────────────────────── */
-
-.badge-custom-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background-color: var(--brand-orange);
-  flex-shrink: 0;
-}
-
-/* ── Badge variants ──────────────────────────────────────────────────────── */
-
-.badge-muted {
-  background: var(--bg-tertiary);
-  color: var(--text-muted);
-  border: 1px solid var(--border-color);
-  font-size: 0.7rem;
-  font-weight: 600;
-  padding: 0.15rem 0.45rem;
-  border-radius: 4px;
-}
-
-.badge-override {
-  background-color: rgba(239, 125, 0, 0.1);
-  color: var(--brand-orange);
-  border: 1px solid rgba(239, 125, 0, 0.25);
-  font-size: 0.7rem;
-  font-weight: 600;
-  padding: 0.15rem 0.45rem;
-  border-radius: 4px;
-}
-
 /* ── Panel empty state ───────────────────────────────────────────────────── */
 
 .panel-empty-state {
@@ -695,6 +663,11 @@
   font-size: 0.875rem;
   color: var(--brand-navy);
   flex: 1;
+  min-width: 0;
+}
+
+.library-module-menu-wrap {
+  flex-shrink: 0;
 }
 
 .library-module-desc {
@@ -716,15 +689,12 @@
   color: var(--text-muted);
 }
 
-.library-section-header {
-  font-size: 0.7rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--text-muted);
-  padding: 0.35rem 0 0.5rem;
-  border-bottom: 1px solid var(--border-color);
-  margin-bottom: 0.25rem;
+.library-search {
+  margin-bottom: 0.75rem;
+}
+
+.library-search .ib-search-input {
+  width: 100%;
 }
 
 /* ── Preview module section ──────────────────────────────────────────────── */
@@ -769,27 +739,6 @@
   background-color: #d66e00;
   transform: scale(1.07);
 }
-
-/* ── Compact status dots (module card) ───────────────────────────────────── */
-
-.mod-status-label {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
-  font-size: 0.78rem;
-  color: var(--text-secondary);
-}
-
-.mod-status-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-
-.mod-status-dot.live    { background-color: var(--color-success); }
-.mod-status-dot.draft   { background-color: var(--text-muted); }
-.mod-status-dot.shared  { background-color: var(--color-info); }
 
 /* ── Module card ⋮ context menu ──────────────────────────────────────────── */
 
@@ -854,6 +803,23 @@
 
 .module-card-dropdown-item.danger:hover {
   background-color: var(--color-danger-bg);
+}
+
+.step-menu-dropdown {
+  right: 0;
+  top: calc(100% + 2px);
+}
+
+.step-rename-input {
+  flex: 1;
+  padding: 0.15rem 0.35rem;
+  font-size: 0.85rem;
+  border: 1px solid var(--brand-orange);
+  border-radius: 4px;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  outline: none;
+  min-width: 0;
 }
 
 /* ── Step editor form improvements ───────────────────────────────────────── */
@@ -987,21 +953,9 @@
   white-space: nowrap;
 }
 
-.module-sidebar-dots {
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-  flex-shrink: 0;
-}
-
 .module-sidebar-menu-wrap {
   position: relative;
   flex-shrink: 0;
-  opacity: 0;
-  transition: opacity 0.12s ease;
-}
-
-.module-sidebar-item:hover .module-sidebar-menu-wrap {
   opacity: 1;
 }
 
@@ -1163,14 +1117,9 @@
 }
 
 .step-row-actions {
-  opacity: 0;
-  transition: opacity 0.12s ease;
+  opacity: 1;
   display: flex;
   justify-content: center;
-}
-
-.steps-table tbody tr:hover .step-row-actions {
-  opacity: 1;
 }
 
 /* ── "+ Add step" table row ──────────────────────────────────────────────── */
@@ -1191,15 +1140,7 @@
   color: var(--brand-orange);
 }
 
-.step-add-row-disabled {
-  cursor: not-allowed;
-  opacity: 0.5;
-}
 
-.step-add-row-disabled:hover td {
-  background-color: transparent;
-  color: var(--text-muted);
-}
 
 .step-add-shared-hint {
   font-size: 0.75rem;
@@ -1513,12 +1454,114 @@
 }
 
 /* Instruction tab */
+.step-tab-content.step-instruction-tab {
+  max-width: none;
+}
+
+.step-instruction-markdown-toolbar {
+  width: 100%;
+}
+
+.step-instruction-editor-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  align-items: stretch;
+}
+
+.step-instruction-editor-pane,
+.step-instruction-preview-pane {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.step-instruction-pane-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
 .step-instruction-textarea {
+  flex: 1;
   min-height: 260px;
   resize: vertical;
   line-height: 1.7;
   font-size: 1rem;
   padding: 1rem;
+}
+
+.step-instruction-preview {
+  flex: 1;
+  min-height: 260px;
+  padding: 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--bg-secondary);
+  overflow-y: auto;
+  line-height: 1.7;
+  font-size: 1rem;
+  color: var(--text-primary);
+}
+
+.step-instruction-preview h1,
+.step-instruction-preview h2,
+.step-instruction-preview h3 {
+  margin: 0 0 0.5rem;
+  color: var(--brand-navy);
+  line-height: 1.3;
+}
+
+.step-instruction-preview h1 { font-size: 1.35rem; }
+.step-instruction-preview h2 { font-size: 1.15rem; }
+.step-instruction-preview h3 { font-size: 1rem; }
+
+.step-instruction-preview p {
+  margin: 0 0 0.75rem;
+}
+
+.step-instruction-preview p:last-child,
+.step-instruction-preview ul:last-child,
+.step-instruction-preview ol:last-child {
+  margin-bottom: 0;
+}
+
+.step-instruction-preview ul,
+.step-instruction-preview ol {
+  margin: 0 0 0.75rem;
+  padding-left: 1.25rem;
+}
+
+.step-instruction-preview li {
+  margin-bottom: 0.25rem;
+}
+
+.step-instruction-preview code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.9em;
+  background: var(--bg-tertiary);
+  padding: 0.1rem 0.35rem;
+  border-radius: 4px;
+}
+
+.step-instruction-preview a {
+  color: var(--brand-orange);
+  text-decoration: underline;
+}
+
+.step-instruction-preview-empty {
+  margin: 0;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+@media (max-width: 900px) {
+  .step-instruction-editor-layout {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* Visual tab — image canvas */
@@ -1704,7 +1747,7 @@
 
 .step-check-item {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 0.75rem;
   padding: 0.75rem 0.9rem;
   background: var(--bg-secondary);
@@ -1752,16 +1795,17 @@
   min-width: 0;
 }
 
-.step-check-item-label {
-  font-size: 0.88rem !important;
+.step-check-item-title {
+  font-size: 0.82rem !important;
+  font-weight: 600;
   padding: 0.35rem 0.6rem !important;
   border-radius: 5px !important;
 }
 
-.step-check-item-badge {
-  font-size: 0.68rem;
-  color: var(--text-muted);
-  padding-left: 0.1rem;
+.step-check-item-label {
+  font-size: 0.88rem !important;
+  padding: 0.35rem 0.6rem !important;
+  border-radius: 5px !important;
 }
 
 .step-check-item-delete {
@@ -1774,12 +1818,8 @@
   color: var(--text-muted);
   cursor: pointer;
   flex-shrink: 0;
-  opacity: 0;
-  transition: opacity 0.12s ease, color 0.12s ease, background-color 0.12s ease;
-}
-
-.step-check-item:hover .step-check-item-delete {
   opacity: 1;
+  transition: color 0.12s ease, background-color 0.12s ease;
 }
 
 .step-check-item-delete:hover {
@@ -1962,36 +2002,8 @@
   align-items: flex-start;
 }
 
-/* ── Refactor additions ──────────────────────────────────────────────────────── */
-
-/* Warning banner (replaces alert() for shared-module add-step error) */
-.ib-warning-banner {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 0.75rem;
-  background: rgba(239, 125, 0, 0.08);
-  border-left: 3px solid var(--brand-orange);
-  border-radius: 0 4px 4px 0;
-  margin: 0 0 0.75rem;
-  font-size: 0.8rem;
-  color: var(--text-secondary);
-}
-
-.ib-warning-dismiss {
-  margin-left: auto;
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: var(--text-muted);
-  display: flex;
-  align-items: center;
-  padding: 0;
-}
-
-/* Badge utilities */
+/* Badge and panel utilities */
 .badge-sm { font-size: 0.68rem; }
-.badge-clickable { cursor: pointer; font-size: 0.72rem; }
 
 /* Panel header utilities */
 .panel-header-left {
@@ -2023,11 +2035,6 @@
 .step-editor-done-btn {
   padding: 0.45rem 1.1rem;
   font-size: 0.875rem;
-}
-
-.step-editor-override-badge {
-  font-size: 0.65rem;
-  margin: auto 0 auto auto;
 }
 
 /* Preview panel utilities */
@@ -2088,5 +2095,64 @@
   color: var(--text-muted);
   margin: 0 0.2rem;
   font-size: 0.85rem;
+}
+
+/* ── Drag-and-drop ───────────────────────────────────────────────────────── */
+
+.drag-handle {
+  display: flex;
+  align-items: center;
+  color: var(--text-muted);
+  opacity: 0;
+  cursor: grab;
+  flex-shrink: 0;
+  padding: 0 2px;
+  transition: opacity 0.15s ease;
+}
+
+.drag-handle:active {
+  cursor: grabbing;
+}
+
+.module-sidebar-item .drag-handle {
+  opacity: 1;
+}
+
+.steps-table .drag-handle {
+  opacity: 1;
+}
+
+.module-sidebar-item.is-drop-target {
+  background-color: rgba(239, 125, 0, 0.1);
+  box-shadow: inset 0 0 0 1.5px var(--brand-orange);
+}
+
+.drag-overlay-module {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 7px;
+  padding: 0.5rem 0.85rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  box-shadow: var(--shadow-md);
+  white-space: nowrap;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.drag-overlay-step {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 0.4rem 0.75rem;
+  font-size: 0.82rem;
+  color: var(--text-primary);
+  box-shadow: var(--shadow-md);
+  white-space: nowrap;
+  max-width: 280px;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
