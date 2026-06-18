@@ -11,6 +11,7 @@ interface Props {
   onAddProduct: () => void;
   onConfirmAddProduct: (name: string) => void;
   onCancelAddProduct: () => void;
+  embedded?: boolean;
 }
 
 export const ProductsView: React.FC<Props> = ({
@@ -22,6 +23,7 @@ export const ProductsView: React.FC<Props> = ({
   onAddProduct,
   onConfirmAddProduct,
   onCancelAddProduct,
+  embedded = false,
 }) => {
   const [newProductName, setNewProductName] = useState('');
 
@@ -36,22 +38,38 @@ export const ProductsView: React.FC<Props> = ({
   };
 
   return (
-    <div className="dashboard-container">
-      <div className="dashboard-header">
-        <div>
-          <h1 className="dashboard-title">Instruction Builder</h1>
-          <p className="dashboard-subtitle">All Products</p>
+    <div className={embedded ? "ib-embedded-container" : "dashboard-container"}>
+      {embedded ? (
+        <div className="ib-embedded-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--brand-navy)' }}>Select Product to Edit Instructions</span>
+          <div className="ib-search-wrap" style={{ margin: 0, width: '180px' }}>
+            <input
+              type="text"
+              className="form-input ib-search-input"
+              style={{ padding: '0.25rem 0.5rem', fontSize: '0.8rem', height: '30px' }}
+              placeholder="Search…"
+              value={searchTerm}
+              onChange={e => onSearchChange(e.target.value)}
+            />
+          </div>
         </div>
-        <div className="ib-search-wrap">
-          <input
-            type="text"
-            className="form-input ib-search-input"
-            placeholder="Search…"
-            value={searchTerm}
-            onChange={e => onSearchChange(e.target.value)}
-          />
+      ) : (
+        <div className="dashboard-header">
+          <div>
+            <h1 className="dashboard-title">Instruction Builder</h1>
+            <p className="dashboard-subtitle">All Products</p>
+          </div>
+          <div className="ib-search-wrap">
+            <input
+              type="text"
+              className="form-input ib-search-input"
+              placeholder="Search…"
+              value={searchTerm}
+              onChange={e => onSearchChange(e.target.value)}
+            />
+          </div>
         </div>
-      </div>
+      )}
 
       {filteredProducts.length === 0 ? (
         <div className="ib-empty-state">

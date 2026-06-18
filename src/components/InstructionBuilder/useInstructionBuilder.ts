@@ -3,17 +3,52 @@ import React from 'react';
 import type { Step, Module, Product, Configuration, CheckItem, StepImage, Annotation, View, StepType } from './types';
 import { initialModules, initialProducts } from './data';
 
-export function useInstructionBuilder() {
+export function useInstructionBuilder(options?: {
+  initialProductId?: string | null;
+  initialConfigurationId?: string | null;
+  initialModuleId?: string | null;
+  initialStepId?: string | null;
+}) {
+  const initProductId = options?.initialProductId ?? null;
+  const initConfigurationId = options?.initialConfigurationId ?? null;
+  const initModuleId = options?.initialModuleId ?? null;
+  const initStepId = options?.initialStepId ?? null;
+
+  // Find the initial module to extract the step form draft
+  const initialModule = initModuleId ? initialModules.find(m => m.id === initModuleId) : null;
+  const initialStep = (initialModule && initStepId) ? initialModule.steps.find(s => s.id === initStepId) : null;
+
+  // Initialize stepFormDraft if initialStep is provided
+  const getInitialStepFormDraft = (): Partial<Step> | null => {
+    if (!initialStep) return null;
+    const images: StepImage[] = initialStep.images
+      ?? (initialStep.imageUrl
+        ? [{ id: 'img-0', url: initialStep.imageUrl, caption: initialStep.caption ?? '', annotations: [] }]
+        : []);
+    
+    let checks: CheckItem[] = [];
+    if (initialStep.checks) {
+      checks = initialStep.checks;
+    } else if (initialStep.checkType && initialStep.checkType !== 'none') {
+      const label = initialStep.checkType === 'checkbox' ? 'Confirm step is complete' : 'Enter measurement value';
+      checks = [{ id: `ck-${Date.now()}`, type: initialStep.checkType as 'checkbox' | 'measurement', label }];
+    }
+
+    return { ...initialStep, images, checks };
+  };
+
   // ── Core data ────────────────────────────────────────────────────────────────
-  const [view, setView] = useState<View>('products');
+  const [view, setView] = useState<View>(
+    initialStep ? 'step-editor' : (initProductId ? 'product-detail' : 'products')
+  );
   const [products, setProducts] = useState<Product[]>(initialProducts);
   const [modules, setModules] = useState<Module[]>(initialModules);
 
   // ── Navigation ───────────────────────────────────────────────────────────────
-  const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
-  const [selectedConfigurationId, setSelectedConfigurationId] = useState<string | null>(null);
-  const [selectedModuleId, setSelectedModuleId] = useState<string | null>(null);
-  const [selectedStepId, setSelectedStepId] = useState<string | null>(null);
+  const [selectedProductId, setSelectedProductId] = useState<string | null>(initProductId);
+  const [selectedConfigurationId, setSelectedConfigurationId] = useState<string | null>(initConfigurationId);
+  const [selectedModuleId, setSelectedModuleId] = useState<string | null>(initModuleId);
+  const [selectedStepId, setSelectedStepId] = useState<string | null>(initStepId);
 
   // ── UI state ─────────────────────────────────────────────────────────────────
   const [searchTerm, setSearchTerm] = useState('');
@@ -25,7 +60,7 @@ export function useInstructionBuilder() {
   const [addProductDialogOpen, setAddProductDialogOpen] = useState(false);
 
   // ── Step editor state ────────────────────────────────────────────────────────
-  const [stepFormDraft, setStepFormDraft] = useState<Partial<Step> | null>(null);
+  const [stepFormDraft, setStepFormDraft] = useState<Partial<Step> | null>(getInitialStepFormDraft());
   const [activeStepTab, setActiveStepTab] = useState<'instruction' | 'visual' | 'check'>('instruction');
   const [activeTool, setActiveTool] = useState<'select' | 'rect' | 'circle' | 'arrow'>('select');
   const [activeColor, setActiveColor] = useState('#ef7d00');
