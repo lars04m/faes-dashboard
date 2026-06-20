@@ -67,6 +67,19 @@ export function useInstructionBuilder(options?: {
   const [drawing, setDrawing] = useState<{ startX: number; startY: number; endX: number; endY: number } | null>(null);
   const [activeImageIdx, setActiveImageIdx] = useState<number>(0);
 
+  // Auto-commit draft edits back to modules list in real time to propagate changes to the parent
+  React.useEffect(() => {
+    if (initStepId && stepFormDraft && selectedModuleId) {
+      setModules(prev => prev.map(m => m.id === selectedModuleId
+        ? {
+            ...m,
+            steps: m.steps.map(s => s.id === initStepId ? { ...s, ...stepFormDraft } as Step : s)
+          }
+        : m
+      ));
+    }
+  }, [stepFormDraft, initStepId, selectedModuleId]);
+
   // ── Derived state ────────────────────────────────────────────────────────────
   const selectedProduct = products.find(p => p.id === selectedProductId) ?? null;
   const selectedConfiguration: Configuration | null =

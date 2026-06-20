@@ -178,17 +178,24 @@ export const StepEditorView: React.FC<Props> = ({
     <div className={`visual-editor-view ${embedded ? 'embedded' : ''}`}>
       {/* Top bar */}
       <div className="visual-editor-topbar">
-        <button className="ib-back-btn" onClick={onDone} style={{ color: 'var(--text-secondary)' }}>
-          <ArrowLeft size={15} /> {selectedModule?.name}
-        </button>
-        <div className="visual-editor-topbar-title">
+        {!embedded && (
+          <button className="ib-back-btn" onClick={onDone} style={{ color: 'var(--text-secondary)' }}>
+            <ArrowLeft size={15} /> {selectedModule?.name}
+          </button>
+        )}
+        <div 
+          className="visual-editor-topbar-title"
+          style={embedded ? { textAlign: 'left', paddingLeft: 0 } : undefined}
+        >
           {selectedProduct?.name}
           {selectedConfiguration && ` / ${selectedConfiguration.name}`}
           {` / ${selectedModule?.name} / Step ${stepIdx + 1}`}
         </div>
-        <button className="btn-primary step-editor-done-btn" onClick={onDone}>
-          Done
-        </button>
+        {!embedded && (
+          <button className="btn-primary step-editor-done-btn" onClick={onDone}>
+            Done
+          </button>
+        )}
       </div>
 
       {/* Step name */}
