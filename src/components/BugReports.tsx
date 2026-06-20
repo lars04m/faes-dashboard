@@ -401,14 +401,6 @@ export const BugReports: React.FC = () => {
                 <h1 className="dashboard-title" style={{ fontSize: '1.5rem', marginTop: '0.15rem' }}>Review Changes: {showReviewPage.id}</h1>
                 <p className="dashboard-subtitle">Comparing proposed instruction updates for {moduleTitle}.</p>
               </div>
-              <div style={{ display: 'flex', gap: '0.75rem' }}>
-                <button 
-                  className="btn-secondary" 
-                  onClick={() => { setShowReviewPage(null); setDenyReason(''); setDenyError(false); }}
-                >
-                  Back
-                </button>
-              </div>
             </div>
 
             {/* Step Card-based side-by-side diff viewer */}
@@ -490,9 +482,9 @@ export const BugReports: React.FC = () => {
             {/* Floating Action Panel in Bottom-Right */}
             <div style={{
               position: 'absolute',
-              bottom: '1.5rem',
-              right: '2.5rem',
-              width: actionPanelExpanded ? '320px' : '160px',
+              bottom: '0',
+              right: '0',
+              width: actionPanelExpanded ? '350px' : '160px',
               backgroundColor: 'rgba(255, 255, 255, 0.95)',
               backdropFilter: 'blur(8px)',
               border: '1px solid var(--border-color)',
@@ -545,13 +537,6 @@ export const BugReports: React.FC = () => {
 
                   <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end', marginTop: '0.25rem' }}>
                     <button 
-                      className="btn-secondary" 
-                      style={{ padding: '0.35rem 0.75rem', fontSize: '0.775rem' }} 
-                      onClick={() => { setShowReviewPage(null); setDenyReason(''); setDenyError(false); }}
-                    >
-                      Cancel
-                    </button>
-                    <button 
                       className="btn-danger" 
                       style={{ padding: '0.35rem 0.75rem', fontSize: '0.775rem', backgroundColor: 'var(--color-danger)', color: 'white' }} 
                       onClick={() => handleDenyMerge(showReviewPage.id)}
@@ -564,6 +549,13 @@ export const BugReports: React.FC = () => {
                       onClick={() => handleApproveMerge(showReviewPage.id)}
                     >
                       Approve & Merge
+                    </button>
+                    <button 
+                      className="btn-secondary" 
+                      style={{ padding: '0.35rem 0.75rem', fontSize: '0.775rem' }} 
+                      onClick={() => { setShowReviewPage(null); setDenyReason(''); setDenyError(false); }}
+                    >
+                      Back
                     </button>
                   </div>
                 </>
