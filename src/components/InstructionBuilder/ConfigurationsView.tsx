@@ -115,9 +115,11 @@ export const ConfigurationsView: React.FC<Props> = ({
         </div>
       )}
 
-      <button className="ib-fab" onClick={() => setDialogOpen(true)} title="Add configuration">
-        <Plus size={22} />
-      </button>
+      {!embedded && (
+        <button className="ib-fab" onClick={() => setDialogOpen(true)} title="Add configuration">
+          <Plus size={22} />
+        </button>
+      )}
 
       {dialogOpen && (
         <div className="modal-overlay" onClick={handleCancel}>

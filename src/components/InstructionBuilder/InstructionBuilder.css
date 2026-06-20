@@ -1160,6 +1160,12 @@
   overflow: hidden;
 }
 
+.visual-editor-view.embedded {
+  position: absolute;
+  inset: 0;
+  z-index: 100;
+}
+
 .visual-editor-topbar {
   display: flex;
   align-items: center;

@@ -350,6 +350,7 @@ export const InstructionBuilder: React.FC<InstructionBuilderProps> = ({
           onActiveImageChange={s.setActiveImageIdx}
           onUndoAnnotation={s.handleUndoAnnotation}
           onClearAnnotations={s.handleClearAnnotations}
+          embedded={embedded}
         />
       )}
     </>

@@ -99,9 +99,11 @@ export const ProductsView: React.FC<Props> = ({
         </div>
       )}
 
-      <button className="ib-fab" onClick={onAddProduct} title="Add product">
-        <Plus size={22} />
-      </button>
+      {!embedded && (
+        <button className="ib-fab" onClick={onAddProduct} title="Add product">
+          <Plus size={22} />
+        </button>
+      )}
 
       {addProductDialogOpen && (
         <div className="modal-overlay" onClick={handleCancel}>
