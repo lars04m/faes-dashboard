@@ -660,14 +660,7 @@ export const BugReports: React.FC = () => {
                     <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{selectedBug.description}</p>
                   </div>
 
-                  <div className="modal-steps-box">
-                    <div style={{ fontWeight: 600, fontSize: '0.8rem', color: 'var(--brand-navy)' }}>Steps to Reproduce:</div>
-                    <ol className="modal-steps-list">
-                      {selectedBug.steps.map((step, idx) => (
-                        <li key={idx}>{step}</li>
-                      ))}
-                    </ol>
-                  </div>
+
                 </div>
 
                 <div className="details-footer">
