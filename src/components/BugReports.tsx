@@ -429,7 +429,7 @@ export const BugReports: React.FC = () => {
                     return (
                       <div key={`left-${step.id}`} className={stepClass}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 600, fontSize: '0.8rem', opacity: 0.85 }}>
-                          <span>{item.type === 'removed' ? '-' : ' '}</span>
+                          <span>{(item.type === 'removed' || item.type === 'modified') ? '-' : ' '}</span>
                           <span>Step {idx + 1}</span>
                         </div>
                         <div style={{ fontSize: '0.85rem', lineHeight: '1.4', marginTop: '0.25rem' }}>
@@ -466,7 +466,7 @@ export const BugReports: React.FC = () => {
                     return (
                       <div key={`right-${step.id}`} className={stepClass}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 600, fontSize: '0.8rem', opacity: 0.85 }}>
-                          <span>{item.type === 'added' ? '+' : ' '}</span>
+                          <span>{(item.type === 'added' || item.type === 'modified') ? '+' : ' '}</span>
                           <span>Step {idx + 1}</span>
                         </div>
                         <div style={{ fontSize: '0.85rem', lineHeight: '1.4', marginTop: '0.25rem' }}>
