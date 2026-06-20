@@ -218,6 +218,11 @@ export const BugReports: React.FC = () => {
   // Notification Toast State
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'info' } | null>(null);
 
+  // Review Action Panel states
+  const [actionPanelExpanded, setActionPanelExpanded] = useState(true);
+  const [denyReason, setDenyReason] = useState('');
+  const [denyError, setDenyError] = useState(false);
+
   // Untagged Bugs list (where priority is unassigned)
   const untaggedBugs = bugs.filter(b => b.priority === 'unassigned');
   const totalUntagged = untaggedBugs.length;
@@ -291,6 +296,25 @@ export const BugReports: React.FC = () => {
       type: 'success'
     });
     setTimeout(() => setToast(null), 3500);
+    setDenyReason('');
+    setDenyError(false);
+  };
+
+  const handleDenyMerge = (bugId: string) => {
+    if (!denyReason.trim()) {
+      setDenyError(true);
+      return;
+    }
+    setShowReviewPage(null);
+    setSelectedBug(null);
+    setEditedInstructionInfo(null);
+    setToast({
+      message: `Changes for ${bugId} denied: "${denyReason.trim()}"`,
+      type: 'info'
+    });
+    setTimeout(() => setToast(null), 4000);
+    setDenyReason('');
+    setDenyError(false);
   };
 
   // Filter logic
@@ -370,7 +394,7 @@ export const BugReports: React.FC = () => {
           : 'Proposed Version (v2.4.1-rc1)';
 
         return (
-          <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 100px)' }}>
+          <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 100px)', position: 'relative' }}>
             <div className="dashboard-header" style={{ marginBottom: '1.25rem' }}>
               <div>
                 <span style={{ color: 'var(--brand-orange)', fontSize: '0.85rem', fontWeight: 600 }}>INSTRUCTION MERGE REQUEST</span>
@@ -380,15 +404,9 @@ export const BugReports: React.FC = () => {
               <div style={{ display: 'flex', gap: '0.75rem' }}>
                 <button 
                   className="btn-secondary" 
-                  onClick={() => setShowReviewPage(null)}
+                  onClick={() => { setShowReviewPage(null); setDenyReason(''); setDenyError(false); }}
                 >
                   Back
-                </button>
-                <button 
-                  className="btn-success" 
-                  onClick={() => handleApproveMerge(showReviewPage.id)}
-                >
-                  Approve & Merge
                 </button>
               </div>
             </div>
@@ -468,6 +486,90 @@ export const BugReports: React.FC = () => {
               </div>
 
             </div>
+
+            {/* Floating Action Panel in Bottom-Right */}
+            <div style={{
+              position: 'absolute',
+              bottom: '1.5rem',
+              right: '2.5rem',
+              width: actionPanelExpanded ? '320px' : '160px',
+              backgroundColor: 'rgba(255, 255, 255, 0.95)',
+              backdropFilter: 'blur(8px)',
+              border: '1px solid var(--border-color)',
+              borderRadius: '8px',
+              boxShadow: 'var(--shadow-lg)',
+              padding: '0.75rem',
+              zIndex: 1000,
+              transition: 'all 0.2s ease',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '0.5rem',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span style={{ fontWeight: 600, fontSize: '0.85rem', color: 'var(--brand-navy)' }}>Review Actions</span>
+                <button 
+                  className="btn-secondary" 
+                  style={{ padding: '0.2rem 0.5rem', fontSize: '0.7rem', height: '24px' }} 
+                  onClick={() => setActionPanelExpanded(!actionPanelExpanded)}
+                >
+                  {actionPanelExpanded ? 'Minimize' : 'Expand'}
+                </button>
+              </div>
+
+              {actionPanelExpanded && (
+                <>
+                  <div style={{ marginTop: '0.25rem' }}>
+                    <label style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 600, fontSize: '0.75rem', marginBottom: '0.25rem', color: 'var(--text-secondary)' }}>
+                      <span>Reason for denying:</span>
+                      {denyError && <span style={{ color: 'var(--color-danger)', fontWeight: 500 }}>* Required on deny</span>}
+                    </label>
+                    <textarea
+                      className="form-input"
+                      style={{ 
+                        width: '100%', 
+                        minHeight: '60px', 
+                        fontSize: '0.8rem', 
+                        padding: '0.4rem', 
+                        borderRadius: '4px',
+                        border: denyError ? '1px solid var(--color-danger)' : '1px solid var(--border-color)',
+                        resize: 'none'
+                      }}
+                      placeholder="Enter reason..."
+                      value={denyReason}
+                      onChange={(e) => {
+                        setDenyReason(e.target.value);
+                        if (e.target.value.trim()) setDenyError(false);
+                      }}
+                    />
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end', marginTop: '0.25rem' }}>
+                    <button 
+                      className="btn-secondary" 
+                      style={{ padding: '0.35rem 0.75rem', fontSize: '0.775rem' }} 
+                      onClick={() => { setShowReviewPage(null); setDenyReason(''); setDenyError(false); }}
+                    >
+                      Cancel
+                    </button>
+                    <button 
+                      className="btn-danger" 
+                      style={{ padding: '0.35rem 0.75rem', fontSize: '0.775rem', backgroundColor: 'var(--color-danger)', color: 'white' }} 
+                      onClick={() => handleDenyMerge(showReviewPage.id)}
+                    >
+                      Deny
+                    </button>
+                    <button 
+                      className="btn-success" 
+                      style={{ padding: '0.35rem 0.75rem', fontSize: '0.775rem' }} 
+                      onClick={() => handleApproveMerge(showReviewPage.id)}
+                    >
+                      Approve & Merge
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+
           </div>
         );
       })() : (
