@@ -250,7 +250,7 @@
 }
 
 /* Indicators (Simple dot next to normal-cased text) */
-.severity-indicator, .status-indicator {
+.priority-indicator, .status-indicator {
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
@@ -259,18 +259,17 @@
   font-weight: 500;
 }
 
-.severity-indicator .dot, .status-indicator .dot {
+.priority-indicator .dot, .status-indicator .dot {
   width: 6px;
   height: 6px;
   border-radius: 50%;
   display: inline-block;
 }
 
-.severity-indicator.critical .dot { background-color: var(--color-danger); }
-.severity-indicator.high .dot { background-color: var(--brand-orange); }
-.severity-indicator.medium .dot { background-color: var(--color-info); }
-.severity-indicator.low .dot { background-color: var(--text-muted); }
-.severity-indicator.unassigned .dot { background-color: #cbd5e1; }
+.priority-indicator.high .dot { background-color: var(--brand-orange); }
+.priority-indicator.medium .dot { background-color: var(--color-info); }
+.priority-indicator.low .dot { background-color: var(--text-muted); }
+.priority-indicator.unassigned .dot { background-color: #cbd5e1; }
 
 .status-indicator.open .dot { background-color: var(--color-danger); }
 .status-indicator.progress .dot { background-color: var(--color-warning); }

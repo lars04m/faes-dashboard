@@ -8,7 +8,7 @@ interface BugReport {
   id: string;
   title: string;
   description: string;
-  severity: 'unassigned' | 'low' | 'medium' | 'high';
+  priority: 'unassigned' | 'low' | 'medium' | 'high';
   status: 'open' | 'in-progress' | 'resolved';
   reportedBy: string;
   reportedDate: string;
@@ -20,7 +20,7 @@ const initialBugs: BugReport[] = [
     id: 'BUG-101',
     title: 'Dashboard layout breaking on 1024px screens',
     description: 'The grid elements overlap on medium-sized screens. The sidebar overlaps main content dashboard container panels.',
-    severity: 'high',
+    priority: 'high',
     status: 'in-progress',
     reportedBy: 'Alice Smith',
     reportedDate: '2026-06-11',
@@ -34,7 +34,7 @@ const initialBugs: BugReport[] = [
     id: 'BUG-102',
     title: 'Instruction Builder cannot export PDF',
     description: 'Clicking the PDF export button in the builder freezes the browser tab. Likely a memory leak during HTML-to-Canvas rasterization.',
-    severity: 'unassigned', // Untagged
+    priority: 'unassigned', // Untagged
     status: 'open',
     reportedBy: 'Bob Jones',
     reportedDate: '2026-06-12',
@@ -49,7 +49,7 @@ const initialBugs: BugReport[] = [
     id: 'BUG-103',
     title: 'Version tag mismatch on production deployment logs',
     description: 'The deployment logs report version tags as v2.3.9 even after the v2.4.0 rollout was verified.',
-    severity: 'unassigned', // Untagged
+    priority: 'unassigned', // Untagged
     status: 'resolved',
     reportedBy: 'Charlie Green',
     reportedDate: '2026-06-09',
@@ -63,7 +63,7 @@ const initialBugs: BugReport[] = [
     id: 'BUG-104',
     title: 'Search bar inputs lagging on long queries',
     description: 'Keyboard input displays lag when searching through a large list of bug records without a proper debounce rate.',
-    severity: 'low',
+    priority: 'low',
     status: 'in-progress',
     reportedBy: 'David Brown',
     reportedDate: '2026-06-10',
@@ -77,7 +77,7 @@ const initialBugs: BugReport[] = [
     id: 'BUG-105',
     title: 'API Gateway timeout on bulk requests',
     description: 'Gateway times out with HTTP 504 status when bulk operations request payload exceeds 50MB size limit.',
-    severity: 'unassigned', // Untagged
+    priority: 'unassigned', // Untagged
     status: 'open',
     reportedBy: 'Lars Mombarg',
     reportedDate: '2026-06-12',
@@ -91,7 +91,7 @@ const initialBugs: BugReport[] = [
     id: 'BUG-106',
     title: 'Broken image links in user settings page',
     description: 'User avatar thumbnail elements point to relative fallback addresses instead of CDN buckets.',
-    severity: 'low',
+    priority: 'low',
     status: 'resolved',
     reportedBy: 'Emma Stone',
     reportedDate: '2026-06-08',
@@ -102,7 +102,7 @@ const initialBugs: BugReport[] = [
   }
 ];
 
-const severityWeight = {
+const priorityWeight = {
   high: 3,
   medium: 2,
   low: 1,
@@ -197,7 +197,7 @@ function alignSteps(original: Step[], edited: Step[]): DiffItem[] {
 export const BugReports: React.FC = () => {
   const [bugs, setBugs] = useState<BugReport[]>(initialBugs);
   const [searchTerm, setSearchTerm] = useState('');
-  const [severityFilter, setSeverityFilter] = useState<string>('all');
+  const [priorityFilter, setPriorityFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [selectedBug, setSelectedBug] = useState<BugReport | null>(null);
 
@@ -218,8 +218,8 @@ export const BugReports: React.FC = () => {
   // Notification Toast State
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'info' } | null>(null);
 
-  // Untagged Bugs list (where severity is unassigned)
-  const untaggedBugs = bugs.filter(b => b.severity === 'unassigned');
+  // Untagged Bugs list (where priority is unassigned)
+  const untaggedBugs = bugs.filter(b => b.priority === 'unassigned');
   const totalUntagged = untaggedBugs.length;
 
   // Safe navigation inside untagged bugs slideshow
@@ -239,14 +239,14 @@ export const BugReports: React.FC = () => {
     }
   };
 
-  const handleAssignSeverity = (bugId: string, severity: BugReport['severity']) => {
+  const handleAssignPriority = (bugId: string, priority: BugReport['priority']) => {
     setBugs(prev => prev.map(b => 
-      b.id === bugId ? { ...b, severity } : b
+      b.id === bugId ? { ...b, priority } : b
     ));
 
     // Keep active details in sync
     if (selectedBug && selectedBug.id === bugId) {
-      setSelectedBug(prev => prev ? { ...prev, severity } : null);
+      setSelectedBug(prev => prev ? { ...prev, priority } : null);
     }
 
     // Adjust slide index if the tagged bug leaves the list
@@ -299,16 +299,16 @@ export const BugReports: React.FC = () => {
                           bug.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           bug.description.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesSeverity = severityFilter === 'all' || bug.severity === severityFilter;
+    const matchesPriority = priorityFilter === 'all' || bug.priority === priorityFilter;
     const matchesStatus = statusFilter === 'all' || bug.status === statusFilter;
 
-    return matchesSearch && matchesSeverity && matchesStatus;
+    return matchesSearch && matchesPriority && matchesStatus;
   });
 
-  // Sort logic (Primary: Severity weight, Secondary: Date reported newest first)
+  // Sort logic (Primary: Priority weight, Secondary: Date reported newest first)
   const sortedBugs = [...filteredBugs].sort((a, b) => {
-    const weightA = severityWeight[a.severity];
-    const weightB = severityWeight[b.severity];
+    const weightA = priorityWeight[a.priority];
+    const weightB = priorityWeight[b.priority];
     
     if (weightA !== weightB) {
       return weightB - weightA;
@@ -317,16 +317,16 @@ export const BugReports: React.FC = () => {
     return new Date(b.reportedDate).getTime() - new Date(a.reportedDate).getTime();
   });
 
-  const getSeverityBadge = (severity: BugReport['severity']) => {
-    switch (severity) {
+  const getPriorityBadge = (priority: BugReport['priority']) => {
+    switch (priority) {
       case 'high': 
-        return <span className="severity-indicator high"><span className="dot" />High</span>;
+        return <span className="priority-indicator high"><span className="dot" />High</span>;
       case 'medium': 
-        return <span className="severity-indicator medium"><span className="dot" />Medium</span>;
+        return <span className="priority-indicator medium"><span className="dot" />Medium</span>;
       case 'low': 
-        return <span className="severity-indicator low"><span className="dot" />Low</span>;
+        return <span className="priority-indicator low"><span className="dot" />Low</span>;
       case 'unassigned':
-        return <span className="severity-indicator unassigned"><span className="dot" />Untagged</span>;
+        return <span className="priority-indicator unassigned"><span className="dot" />Untagged</span>;
     }
   };
 
@@ -478,7 +478,7 @@ export const BugReports: React.FC = () => {
             <div className="untagged-banner">
               <div className="banner-header">
                 <AlertTriangle size={18} />
-                <span>Classification Required: {totalUntagged} bug{totalUntagged > 1 ? 's lack' : ' lacks'} severity tagging in the dashboard</span>
+                <span>Classification Required: {totalUntagged} bug{totalUntagged > 1 ? 's lack' : ' lacks'} priority tagging in the dashboard</span>
               </div>
 
               <div className="slideshow-card">
@@ -515,11 +515,11 @@ export const BugReports: React.FC = () => {
                 </div>
 
                 <div className="tagging-actions">
-                  <span className="tag-editor-label">Assign Severity Tag:</span>
+                  <span className="tag-editor-label">Assign Priority Tag:</span>
                   <div className="quick-tags">
-                    <button className="quick-tag-btn" onClick={() => handleAssignSeverity(activeSlideBug.id, 'low')}>Low</button>
-                    <button className="quick-tag-btn" onClick={() => handleAssignSeverity(activeSlideBug.id, 'medium')}>Medium</button>
-                    <button className="quick-tag-btn" onClick={() => handleAssignSeverity(activeSlideBug.id, 'high')}>High</button>
+                    <button className="quick-tag-btn" onClick={() => handleAssignPriority(activeSlideBug.id, 'low')}>Low</button>
+                    <button className="quick-tag-btn" onClick={() => handleAssignPriority(activeSlideBug.id, 'medium')}>Medium</button>
+                    <button className="quick-tag-btn" onClick={() => handleAssignPriority(activeSlideBug.id, 'high')}>High</button>
                   </div>
                 </div>
               </div>
@@ -545,10 +545,10 @@ export const BugReports: React.FC = () => {
                   <Filter size={14} style={{ color: 'var(--text-secondary)' }} />
                   <select
                     className="select-filter"
-                    value={severityFilter}
-                    onChange={(e) => setSeverityFilter(e.target.value)}
+                    value={priorityFilter}
+                    onChange={(e) => setPriorityFilter(e.target.value)}
                   >
-                    <option value="all">All Severities</option>
+                    <option value="all">All Priorities</option>
                     <option value="unassigned">Untagged</option>
                     <option value="high">High</option>
                     <option value="medium">Medium</option>
@@ -568,7 +568,7 @@ export const BugReports: React.FC = () => {
                 </select>
 
                 <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', padding: '0 0.5rem', borderLeft: '1px solid var(--border-color)' }}>
-                  Sorted by Severity & Date
+                  Sorted by Priority & Date
                 </div>
               </div>
             </div>
@@ -628,12 +628,12 @@ export const BugReports: React.FC = () => {
                     <span className="modal-detail-value">{selectedBug.reportedDate}</span>
                   </div>
                   <div className="modal-detail-row">
-                    <span className="modal-detail-label">Severity</span>
+                    <span className="modal-detail-label">Priority</span>
                     <select 
                       className="select-filter" 
-                      value={selectedBug.severity} 
+                      value={selectedBug.priority} 
                       style={{ padding: '0.25rem 0.5rem', borderRadius: '4px', fontSize: '0.825rem' }}
-                      onChange={(e) => handleAssignSeverity(selectedBug.id, e.target.value as BugReport['severity'])}
+                      onChange={(e) => handleAssignPriority(selectedBug.id, e.target.value as BugReport['priority'])}
                     >
                       <option value="unassigned">Untagged</option>
                       <option value="low">Low</option>
@@ -697,7 +697,7 @@ export const BugReports: React.FC = () => {
                     <tr>
                       <th>ID</th>
                       <th>Issue Summary</th>
-                      <th>Severity</th>
+                      <th>Priority</th>
                       <th>Status</th>
                       <th>Reported By</th>
                       <th>Date</th>
@@ -712,7 +712,7 @@ export const BugReports: React.FC = () => {
                             <div className="bug-summary">{bug.title}</div>
                             <div className="bug-desc-short">{bug.description}</div>
                           </td>
-                          <td>{getSeverityBadge(bug.severity)}</td>
+                          <td>{getPriorityBadge(bug.priority)}</td>
                           <td>{getStatusBadge(bug.status)}</td>
                           <td>{bug.reportedBy}</td>
                           <td style={{ color: 'var(--text-secondary)', fontSize: '0.825rem' }}>{bug.reportedDate}</td>
