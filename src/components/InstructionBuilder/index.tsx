@@ -82,14 +82,14 @@ export const InstructionBuilder: React.FC<InstructionBuilderProps> = ({
         onInstructionChange({
           selectedProduct: s.selectedProduct,
           selectedModule: s.selectedModule,
-          originalSteps: s.selectedModule.steps || [],
+          originalSteps: s.originalSteps || [],
           editedSteps: s.effectiveSteps || [],
         });
       } else {
         onInstructionChange(null);
       }
     }
-  }, [s.selectedProduct, s.selectedModule, s.effectiveSteps, onInstructionChange]);
+  }, [s.selectedProduct, s.selectedModule, s.effectiveSteps, s.originalSteps, onInstructionChange]);
 
   const handleDragStart = (event: DragStartEvent) => {
     const data = event.active.data.current;

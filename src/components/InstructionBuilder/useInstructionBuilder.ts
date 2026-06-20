@@ -59,6 +59,21 @@ export function useInstructionBuilder(options?: {
   const [renameValue, setRenameValue] = useState('');
   const [addProductDialogOpen, setAddProductDialogOpen] = useState(false);
 
+  // Preserved original steps for diffing
+  const [originalStepsMap, setOriginalStepsMap] = useState<Record<string, Step[]>>({});
+
+  React.useEffect(() => {
+    if (selectedModuleId && !originalStepsMap[selectedModuleId]) {
+      const mod = initialModules.find(m => m.id === selectedModuleId);
+      if (mod) {
+        setOriginalStepsMap(prev => ({
+          ...prev,
+          [selectedModuleId]: JSON.parse(JSON.stringify(mod.steps))
+        }));
+      }
+    }
+  }, [selectedModuleId, originalStepsMap]);
+
   // ── Step editor state ────────────────────────────────────────────────────────
   const [stepFormDraft, setStepFormDraft] = useState<Partial<Step> | null>(getInitialStepFormDraft());
   const [activeStepTab, setActiveStepTab] = useState<'instruction' | 'visual' | 'check'>('instruction');
@@ -92,6 +107,7 @@ export function useInstructionBuilder(options?: {
     .map(id => modules.find(m => m.id === id)).filter(Boolean) as Module[];
 
   const effectiveSteps: Step[] = selectedModule?.steps ?? [];
+  const originalSteps: Step[] = selectedModuleId ? (originalStepsMap[selectedModuleId] ?? selectedModule?.steps ?? []) : [];
 
   const filteredProducts = products.filter(p =>
     p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -705,7 +721,7 @@ export function useInstructionBuilder(options?: {
     activeImageIdx, setActiveImageIdx,
     // Derived
     selectedProduct, selectedConfiguration, selectedModule,
-    productModules, effectiveSteps,
+    productModules, effectiveSteps, originalSteps,
     filteredProducts, libraryShared, libraryFromOthers,
     // Predicates
     moduleUsageCount,
