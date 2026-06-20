@@ -608,16 +608,20 @@
   color: #166534;
 }
 
-.diff-step-card.modified-old {
+.diff-highlight-removed {
   background-color: #fef2f2;
-  border-color: #fca5a5;
+  border: 1px solid #fca5a5;
   color: #991b1b;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
 }
 
-.diff-step-card.modified-new {
+.diff-highlight-added {
   background-color: #f0fdf4;
-  border-color: #86efac;
+  border: 1px solid #86efac;
   color: #166534;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
 }
 
 .diff-step-placeholder {

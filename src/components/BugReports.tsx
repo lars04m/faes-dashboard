@@ -425,19 +425,28 @@ export const BugReports: React.FC = () => {
                       return <div key={`empty-l-${idx}`} className="diff-step-placeholder" />;
                     }
                     const step = item.left!;
-                    const stepClass = item.type === 'removed' ? 'diff-step-card removed' : (item.type === 'modified' ? 'diff-step-card modified-old' : 'diff-step-card');
+                    const stepClass = item.type === 'removed' ? 'diff-step-card removed' : 'diff-step-card';
+                    const isActionModified = item.type === 'modified' && item.left?.action !== item.right?.action;
+                    const isCheckModified = item.type === 'modified' && item.left?.checkType !== item.right?.checkType;
+                    
                     return (
                       <div key={`left-${step.id}`} className={stepClass}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 600, fontSize: '0.8rem', opacity: 0.85 }}>
                           <span>{(item.type === 'removed' || item.type === 'modified') ? '-' : ' '}</span>
                           <span>Step {idx + 1}</span>
                         </div>
-                        <div style={{ fontSize: '0.85rem', lineHeight: '1.4', marginTop: '0.25rem' }}>
+                        <div 
+                          className={isActionModified ? "diff-highlight-removed" : ""}
+                          style={{ fontSize: '0.85rem', lineHeight: '1.4', marginTop: '0.25rem' }}
+                        >
                           {step.action || <span style={{ fontStyle: 'italic', opacity: 0.5 }}>No action text</span>}
                         </div>
                         {step.checkType && step.checkType !== 'none' && (
                           <div style={{ marginTop: '0.5rem' }}>
-                            <span className="sheet-badge sheet-badge-tool" style={{ fontSize: '0.7rem' }}>
+                            <span 
+                              className={`sheet-badge sheet-badge-tool ${isCheckModified ? "diff-highlight-removed" : ""}`}
+                              style={{ fontSize: '0.7rem' }}
+                            >
                               {step.checkType === 'checkbox' ? 'Checkbox' : 'Measurement'}
                             </span>
                           </div>
@@ -462,19 +471,28 @@ export const BugReports: React.FC = () => {
                       return <div key={`empty-r-${idx}`} className="diff-step-placeholder" />;
                     }
                     const step = item.right!;
-                    const stepClass = item.type === 'added' ? 'diff-step-card added' : (item.type === 'modified' ? 'diff-step-card modified-new' : 'diff-step-card');
+                    const stepClass = item.type === 'added' ? 'diff-step-card added' : 'diff-step-card';
+                    const isActionModified = item.type === 'modified' && item.left?.action !== item.right?.action;
+                    const isCheckModified = item.type === 'modified' && item.left?.checkType !== item.right?.checkType;
+                    
                     return (
                       <div key={`right-${step.id}`} className={stepClass}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 600, fontSize: '0.8rem', opacity: 0.85 }}>
                           <span>{(item.type === 'added' || item.type === 'modified') ? '+' : ' '}</span>
                           <span>Step {idx + 1}</span>
                         </div>
-                        <div style={{ fontSize: '0.85rem', lineHeight: '1.4', marginTop: '0.25rem' }}>
+                        <div 
+                          className={isActionModified ? "diff-highlight-added" : ""}
+                          style={{ fontSize: '0.85rem', lineHeight: '1.4', marginTop: '0.25rem' }}
+                        >
                           {step.action || <span style={{ fontStyle: 'italic', opacity: 0.5 }}>No action text</span>}
                         </div>
                         {step.checkType && step.checkType !== 'none' && (
                           <div style={{ marginTop: '0.5rem' }}>
-                            <span className="sheet-badge sheet-badge-tool" style={{ fontSize: '0.7rem' }}>
+                            <span 
+                              className={`sheet-badge sheet-badge-tool ${isCheckModified ? "diff-highlight-added" : ""}`}
+                              style={{ fontSize: '0.7rem' }}
+                            >
                               {step.checkType === 'checkbox' ? 'Checkbox' : 'Measurement'}
                             </span>
                           </div>
@@ -556,7 +574,7 @@ export const BugReports: React.FC = () => {
                       style={{ padding: '0.35rem 0.75rem', fontSize: '0.775rem' }} 
                       onClick={() => handleApproveMerge(showReviewPage.id)}
                     >
-                      Approve & Merge
+                      Approve
                     </button>
                   </div>
                 </>
