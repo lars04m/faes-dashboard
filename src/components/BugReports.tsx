@@ -401,6 +401,14 @@ export const BugReports: React.FC = () => {
                 <h1 className="dashboard-title" style={{ fontSize: '1.5rem', marginTop: '0.15rem' }}>Review Changes: {showReviewPage.id}</h1>
                 <p className="dashboard-subtitle">Comparing proposed instruction updates for {moduleTitle}.</p>
               </div>
+              <div style={{ display: 'flex', gap: '0.75rem' }}>
+                <button 
+                  className="btn-secondary" 
+                  onClick={() => { setShowReviewPage(null); setDenyReason(''); setDenyError(false); }}
+                >
+                  Back
+                </button>
+              </div>
             </div>
 
             {/* Step Card-based side-by-side diff viewer */}
@@ -549,13 +557,6 @@ export const BugReports: React.FC = () => {
                       onClick={() => handleApproveMerge(showReviewPage.id)}
                     >
                       Approve & Merge
-                    </button>
-                    <button 
-                      className="btn-secondary" 
-                      style={{ padding: '0.35rem 0.75rem', fontSize: '0.775rem' }} 
-                      onClick={() => { setShowReviewPage(null); setDenyReason(''); setDenyError(false); }}
-                    >
-                      Back
                     </button>
                   </div>
                 </>
