@@ -8,7 +8,7 @@ interface BugReport {
   id: string;
   title: string;
   description: string;
-  severity: 'unassigned' | 'low' | 'medium' | 'high' | 'critical';
+  severity: 'unassigned' | 'low' | 'medium' | 'high';
   status: 'open' | 'in-progress' | 'resolved';
   reportedBy: string;
   reportedDate: string;
@@ -103,7 +103,6 @@ const initialBugs: BugReport[] = [
 ];
 
 const severityWeight = {
-  critical: 4,
   high: 3,
   medium: 2,
   low: 1,
@@ -320,8 +319,6 @@ export const BugReports: React.FC = () => {
 
   const getSeverityBadge = (severity: BugReport['severity']) => {
     switch (severity) {
-      case 'critical': 
-        return <span className="severity-indicator critical"><span className="dot" />Critical</span>;
       case 'high': 
         return <span className="severity-indicator high"><span className="dot" />High</span>;
       case 'medium': 
@@ -523,7 +520,6 @@ export const BugReports: React.FC = () => {
                     <button className="quick-tag-btn" onClick={() => handleAssignSeverity(activeSlideBug.id, 'low')}>Low</button>
                     <button className="quick-tag-btn" onClick={() => handleAssignSeverity(activeSlideBug.id, 'medium')}>Medium</button>
                     <button className="quick-tag-btn" onClick={() => handleAssignSeverity(activeSlideBug.id, 'high')}>High</button>
-                    <button className="quick-tag-btn" onClick={() => handleAssignSeverity(activeSlideBug.id, 'critical')}>Critical</button>
                   </div>
                 </div>
               </div>
@@ -554,7 +550,6 @@ export const BugReports: React.FC = () => {
                   >
                     <option value="all">All Severities</option>
                     <option value="unassigned">Untagged</option>
-                    <option value="critical">Critical</option>
                     <option value="high">High</option>
                     <option value="medium">Medium</option>
                     <option value="low">Low</option>
@@ -644,7 +639,6 @@ export const BugReports: React.FC = () => {
                       <option value="low">Low</option>
                       <option value="medium">Medium</option>
                       <option value="high">High</option>
-                      <option value="critical">Critical</option>
                     </select>
                   </div>
                   <div className="modal-detail-row">
