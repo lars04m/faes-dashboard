@@ -38,6 +38,7 @@ interface Props {
   onActiveImageChange: (idx: number) => void;
   onUndoAnnotation: (imageIdx: number) => void;
   onClearAnnotations: (imageIdx: number) => void;
+  embedded?: boolean;
 }
 
 // ── AnnotationSvg ────────────────────────────────────────────────────────────
@@ -145,6 +146,7 @@ export const StepEditorView: React.FC<Props> = ({
   onActiveImageChange,
   onUndoAnnotation,
   onClearAnnotations,
+  embedded = false,
 }) => {
   const instructionRef = useRef<HTMLTextAreaElement>(null);
   const stepIdx = effectiveSteps.findIndex(s => s.id === selectedStepId);
@@ -173,20 +175,27 @@ export const StepEditorView: React.FC<Props> = ({
   const hasVisual = images.some(img => img.url || img.annotations.length > 0);
 
   return (
-    <div className="visual-editor-view">
+    <div className={`visual-editor-view ${embedded ? 'embedded' : ''}`}>
       {/* Top bar */}
       <div className="visual-editor-topbar">
-        <button className="ib-back-btn" onClick={onDone} style={{ color: 'var(--text-secondary)' }}>
-          <ArrowLeft size={15} /> {selectedModule?.name}
-        </button>
-        <div className="visual-editor-topbar-title">
+        {!embedded && (
+          <button className="ib-back-btn" onClick={onDone} style={{ color: 'var(--text-secondary)' }}>
+            <ArrowLeft size={15} /> {selectedModule?.name}
+          </button>
+        )}
+        <div 
+          className="visual-editor-topbar-title"
+          style={embedded ? { textAlign: 'left', paddingLeft: 0 } : undefined}
+        >
           {selectedProduct?.name}
           {selectedConfiguration && ` / ${selectedConfiguration.name}`}
           {` / ${selectedModule?.name} / Step ${stepIdx + 1}`}
         </div>
-        <button className="btn-primary step-editor-done-btn" onClick={onDone}>
-          Done
-        </button>
+        {!embedded && (
+          <button className="btn-primary step-editor-done-btn" onClick={onDone}>
+            Done
+          </button>
+        )}
       </div>
 
       {/* Step name */}

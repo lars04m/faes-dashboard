@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import { Search, X, Filter, ChevronLeft, ChevronRight, AlertTriangle, CheckCircle2, Info } from 'lucide-react';
 import './BugReports.css';
+import { InstructionBuilder } from './InstructionBuilder';
+import type { Step } from './InstructionBuilder/types';
 
 interface BugReport {
   id: string;
   title: string;
   description: string;
-  severity: 'unassigned' | 'low' | 'medium' | 'high' | 'critical';
+  priority: 'unassigned' | 'low' | 'medium' | 'high';
   status: 'open' | 'in-progress' | 'resolved';
   reportedBy: string;
   reportedDate: string;
@@ -18,7 +20,7 @@ const initialBugs: BugReport[] = [
     id: 'BUG-101',
     title: 'Dashboard layout breaking on 1024px screens',
     description: 'The grid elements overlap on medium-sized screens. The sidebar overlaps main content dashboard container panels.',
-    severity: 'high',
+    priority: 'high',
     status: 'in-progress',
     reportedBy: 'Alice Smith',
     reportedDate: '2026-06-11',
@@ -32,7 +34,7 @@ const initialBugs: BugReport[] = [
     id: 'BUG-102',
     title: 'Instruction Builder cannot export PDF',
     description: 'Clicking the PDF export button in the builder freezes the browser tab. Likely a memory leak during HTML-to-Canvas rasterization.',
-    severity: 'unassigned', // Untagged
+    priority: 'unassigned', // Untagged
     status: 'open',
     reportedBy: 'Bob Jones',
     reportedDate: '2026-06-12',
@@ -47,7 +49,7 @@ const initialBugs: BugReport[] = [
     id: 'BUG-103',
     title: 'Version tag mismatch on production deployment logs',
     description: 'The deployment logs report version tags as v2.3.9 even after the v2.4.0 rollout was verified.',
-    severity: 'unassigned', // Untagged
+    priority: 'unassigned', // Untagged
     status: 'resolved',
     reportedBy: 'Charlie Green',
     reportedDate: '2026-06-09',
@@ -61,7 +63,7 @@ const initialBugs: BugReport[] = [
     id: 'BUG-104',
     title: 'Search bar inputs lagging on long queries',
     description: 'Keyboard input displays lag when searching through a large list of bug records without a proper debounce rate.',
-    severity: 'low',
+    priority: 'low',
     status: 'in-progress',
     reportedBy: 'David Brown',
     reportedDate: '2026-06-10',
@@ -75,7 +77,7 @@ const initialBugs: BugReport[] = [
     id: 'BUG-105',
     title: 'API Gateway timeout on bulk requests',
     description: 'Gateway times out with HTTP 504 status when bulk operations request payload exceeds 50MB size limit.',
-    severity: 'unassigned', // Untagged
+    priority: 'unassigned', // Untagged
     status: 'open',
     reportedBy: 'Lars Mombarg',
     reportedDate: '2026-06-12',
@@ -89,7 +91,7 @@ const initialBugs: BugReport[] = [
     id: 'BUG-106',
     title: 'Broken image links in user settings page',
     description: 'User avatar thumbnail elements point to relative fallback addresses instead of CDN buckets.',
-    severity: 'low',
+    priority: 'low',
     status: 'resolved',
     reportedBy: 'Emma Stone',
     reportedDate: '2026-06-08',
@@ -100,20 +102,112 @@ const initialBugs: BugReport[] = [
   }
 ];
 
-const severityWeight = {
-  critical: 4,
+const priorityWeight = {
   high: 3,
   medium: 2,
   low: 1,
   unassigned: 0
 };
 
+const bugBuilderMapping: Record<string, {
+  productId: string;
+  configurationId: string;
+  moduleId: string;
+  stepId: string;
+}> = {
+  'BUG-101': { productId: 'p-2', configurationId: 'cfg-p2-1', moduleId: 'lm-5', stepId: 'lm-5-s2' },
+  'BUG-102': { productId: 'p-1', configurationId: 'cfg-p1-1', moduleId: 'lm-1', stepId: 'lm-1-s1' },
+  'BUG-103': { productId: 'p-3', configurationId: 'cfg-p3-1', moduleId: 'lm-4', stepId: 'lm-4-s1' },
+  'BUG-104': { productId: 'p-2', configurationId: 'cfg-p2-2', moduleId: 'lm-6', stepId: 'lm-6-s1' },
+  'BUG-105': { productId: 'p-5', configurationId: 'cfg-p5-1', moduleId: 'lm-3', stepId: 'lm-3-s1' },
+  'BUG-106': { productId: 'p-3', configurationId: 'cfg-p3-2', moduleId: 'lm-2', stepId: 'lm-2-s3' },
+};
+
+// Default steps for the mock bug review
+const defaultOldSteps: Step[] = [
+  { id: 'diff-s1', stepType: 'text', action: 'Clean the packaging workstation of any debris, dust, or foreign objects.', checkType: 'none', checks: [], images: [], imageUrl: null, caption: '' },
+  { id: 'diff-s2', stepType: 'text', action: 'Peel the protective backing film from the four self-adhesive foam corners.', checkType: 'none', checks: [], images: [], imageUrl: null, caption: '' },
+  { id: 'diff-s3-old', stepType: 'text', action: 'Carefully lift the product by the handle straps. Align it with the corner blocks and drop it down quickly to seat.', checkType: 'none', checks: [], images: [], imageUrl: null, caption: '' },
+  { id: 'diff-s4', stepType: 'text', action: 'Fold the top box flaps shut. Apply two layers of heavy-duty fiber packaging tape across the center seam.', checkType: 'none', checks: [], images: [], imageUrl: null, caption: '' },
+];
+
+const defaultNewSteps: Step[] = [
+  { id: 'diff-s1', stepType: 'text', action: 'Clean the packaging workstation of any debris, dust, or foreign objects.', checkType: 'none', checks: [], images: [], imageUrl: null, caption: '' },
+  { id: 'diff-s2', stepType: 'text', action: 'Peel the protective backing film from the four self-adhesive foam corners.', checkType: 'none', checks: [], images: [], imageUrl: null, caption: '' },
+  { id: 'diff-s3-new', stepType: 'text', action: 'Carefully hoist the heavy equipment core. Align the base corners with the foam channels and gently lower the unit until it seats flush.', checkType: 'none', checks: [], images: [], imageUrl: null, caption: '' },
+  { id: 'diff-s4', stepType: 'text', action: 'Fold the top box flaps shut. Apply two layers of heavy-duty fiber packaging tape across the center seam.', checkType: 'none', checks: [], images: [], imageUrl: null, caption: '' },
+];
+
+interface DiffItem {
+  type: 'unchanged' | 'modified' | 'added' | 'removed';
+  left?: Step;
+  right?: Step;
+}
+
+function alignSteps(original: Step[], edited: Step[]): DiffItem[] {
+  const diffItems: DiffItem[] = [];
+  const originalMap = new Map(original.map(s => [s.id, s]));
+  const editedMap = new Map(edited.map(s => [s.id, s]));
+  
+  let editedIdx = 0;
+  
+  for (const origStep of original) {
+    if (!editedMap.has(origStep.id)) {
+      diffItems.push({
+        type: 'removed',
+        left: origStep
+      });
+    } else {
+      while (editedIdx < edited.length && edited[editedIdx].id !== origStep.id) {
+        const curEdited = edited[editedIdx];
+        if (!originalMap.has(curEdited.id)) {
+          diffItems.push({
+            type: 'added',
+            right: curEdited
+          });
+        }
+        editedIdx++;
+      }
+      
+      const curEdited = edited[editedIdx];
+      const isModified = origStep.action !== curEdited.action || origStep.checkType !== curEdited.checkType;
+      diffItems.push({
+        type: isModified ? 'modified' : 'unchanged',
+        left: origStep,
+        right: curEdited
+      });
+      editedIdx++;
+    }
+  }
+  
+  while (editedIdx < edited.length) {
+    const curEdited = edited[editedIdx];
+    if (!originalMap.has(curEdited.id)) {
+      diffItems.push({
+        type: 'added',
+        right: curEdited
+      });
+    }
+    editedIdx++;
+  }
+  
+  return diffItems;
+}
+
 export const BugReports: React.FC = () => {
   const [bugs, setBugs] = useState<BugReport[]>(initialBugs);
   const [searchTerm, setSearchTerm] = useState('');
-  const [severityFilter, setSeverityFilter] = useState<string>('all');
+  const [priorityFilter, setPriorityFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [selectedBug, setSelectedBug] = useState<BugReport | null>(null);
+
+  // Track the edited instruction state from the embedded builder
+  const [editedInstructionInfo, setEditedInstructionInfo] = useState<{
+    selectedProduct: { id: string; name: string } | null;
+    selectedModule: { id: string; name: string } | null;
+    originalSteps: Step[];
+    editedSteps: Step[];
+  } | null>(null);
 
   // Split view/overlay state for Review Page
   const [showReviewPage, setShowReviewPage] = useState<BugReport | null>(null);
@@ -124,8 +218,8 @@ export const BugReports: React.FC = () => {
   // Notification Toast State
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'info' } | null>(null);
 
-  // Untagged Bugs list (where severity is unassigned)
-  const untaggedBugs = bugs.filter(b => b.severity === 'unassigned');
+  // Untagged Bugs list (where priority is unassigned)
+  const untaggedBugs = bugs.filter(b => b.priority === 'unassigned');
   const totalUntagged = untaggedBugs.length;
 
   // Safe navigation inside untagged bugs slideshow
@@ -145,14 +239,14 @@ export const BugReports: React.FC = () => {
     }
   };
 
-  const handleAssignSeverity = (bugId: string, severity: BugReport['severity']) => {
+  const handleAssignPriority = (bugId: string, priority: BugReport['priority']) => {
     setBugs(prev => prev.map(b => 
-      b.id === bugId ? { ...b, severity } : b
+      b.id === bugId ? { ...b, priority } : b
     ));
 
     // Keep active details in sync
     if (selectedBug && selectedBug.id === bugId) {
-      setSelectedBug(prev => prev ? { ...prev, severity } : null);
+      setSelectedBug(prev => prev ? { ...prev, priority } : null);
     }
 
     // Adjust slide index if the tagged bug leaves the list
@@ -173,6 +267,7 @@ export const BugReports: React.FC = () => {
   // Redirect & Notify Handlers
   const handleSaveDraft = (bugId: string) => {
     setSelectedBug(null);
+    setEditedInstructionInfo(null);
     setToast({
       message: `Draft saved successfully for ${bugId}`,
       type: 'info'
@@ -190,6 +285,7 @@ export const BugReports: React.FC = () => {
   const handleApproveMerge = (bugId: string) => {
     setShowReviewPage(null);
     setSelectedBug(null);
+    setEditedInstructionInfo(null);
     setToast({
       message: `Changes for ${bugId} approved and merged successfully`,
       type: 'success'
@@ -203,16 +299,16 @@ export const BugReports: React.FC = () => {
                           bug.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           bug.description.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesSeverity = severityFilter === 'all' || bug.severity === severityFilter;
+    const matchesPriority = priorityFilter === 'all' || bug.priority === priorityFilter;
     const matchesStatus = statusFilter === 'all' || bug.status === statusFilter;
 
-    return matchesSearch && matchesSeverity && matchesStatus;
+    return matchesSearch && matchesPriority && matchesStatus;
   });
 
-  // Sort logic (Primary: Severity weight, Secondary: Date reported newest first)
+  // Sort logic (Primary: Priority weight, Secondary: Date reported newest first)
   const sortedBugs = [...filteredBugs].sort((a, b) => {
-    const weightA = severityWeight[a.severity];
-    const weightB = severityWeight[b.severity];
+    const weightA = priorityWeight[a.priority];
+    const weightB = priorityWeight[b.priority];
     
     if (weightA !== weightB) {
       return weightB - weightA;
@@ -221,18 +317,16 @@ export const BugReports: React.FC = () => {
     return new Date(b.reportedDate).getTime() - new Date(a.reportedDate).getTime();
   });
 
-  const getSeverityBadge = (severity: BugReport['severity']) => {
-    switch (severity) {
-      case 'critical': 
-        return <span className="severity-indicator critical"><span className="dot" />Critical</span>;
+  const getPriorityBadge = (priority: BugReport['priority']) => {
+    switch (priority) {
       case 'high': 
-        return <span className="severity-indicator high"><span className="dot" />High</span>;
+        return <span className="priority-indicator high"><span className="dot" />High</span>;
       case 'medium': 
-        return <span className="severity-indicator medium"><span className="dot" />Medium</span>;
+        return <span className="priority-indicator medium"><span className="dot" />Medium</span>;
       case 'low': 
-        return <span className="severity-indicator low"><span className="dot" />Low</span>;
+        return <span className="priority-indicator low"><span className="dot" />Low</span>;
       case 'unassigned':
-        return <span className="severity-indicator unassigned"><span className="dot" />Untagged</span>;
+        return <span className="priority-indicator unassigned"><span className="dot" />Untagged</span>;
     }
   };
 
@@ -260,112 +354,123 @@ export const BugReports: React.FC = () => {
       )}
 
       {/* Review Page View (Side-by-Side Instruction Diffs) */}
-      {showReviewPage ? (
-        <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 100px)' }}>
-          <div className="dashboard-header" style={{ marginBottom: '1.25rem' }}>
-            <div>
-              <span style={{ color: 'var(--brand-orange)', fontSize: '0.85rem', fontWeight: 600 }}>INSTRUCTION MERGE REQUEST</span>
-              <h1 className="dashboard-title" style={{ fontSize: '1.5rem', marginTop: '0.15rem' }}>Review Changes: {showReviewPage.id}</h1>
-              <p className="dashboard-subtitle">Comparing proposed instruction updates for box assembly manuals.</p>
+      {showReviewPage ? (() => {
+        const originalSteps = editedInstructionInfo ? editedInstructionInfo.originalSteps : defaultOldSteps;
+        const editedSteps = editedInstructionInfo ? editedInstructionInfo.editedSteps : defaultNewSteps;
+        const diffItems = alignSteps(originalSteps, editedSteps);
+        
+        const moduleTitle = editedInstructionInfo
+          ? `${editedInstructionInfo.selectedProduct?.name} — ${editedInstructionInfo.selectedModule?.name}`
+          : 'Box Assembly Manual';
+        const oldVersionLabel = editedInstructionInfo 
+          ? `Original Version` 
+          : 'Previous Version (v2.4.0)';
+        const newVersionLabel = editedInstructionInfo 
+          ? `Modified Version (Draft)` 
+          : 'Proposed Version (v2.4.1-rc1)';
+
+        return (
+          <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 100px)' }}>
+            <div className="dashboard-header" style={{ marginBottom: '1.25rem' }}>
+              <div>
+                <span style={{ color: 'var(--brand-orange)', fontSize: '0.85rem', fontWeight: 600 }}>INSTRUCTION MERGE REQUEST</span>
+                <h1 className="dashboard-title" style={{ fontSize: '1.5rem', marginTop: '0.15rem' }}>Review Changes: {showReviewPage.id}</h1>
+                <p className="dashboard-subtitle">Comparing proposed instruction updates for {moduleTitle}.</p>
+              </div>
+              <div style={{ display: 'flex', gap: '0.75rem' }}>
+                <button 
+                  className="btn-secondary" 
+                  onClick={() => setShowReviewPage(null)}
+                >
+                  Back
+                </button>
+                <button 
+                  className="btn-success" 
+                  onClick={() => handleApproveMerge(showReviewPage.id)}
+                >
+                  Approve & Merge
+                </button>
+              </div>
             </div>
-            <div style={{ display: 'flex', gap: '0.75rem' }}>
-              <button 
-                className="btn-secondary" 
-                onClick={() => setShowReviewPage(null)}
-              >
-                Back
-              </button>
-              <button 
-                className="btn-success" 
-                onClick={() => handleApproveMerge(showReviewPage.id)}
-              >
-                Approve & Merge
-              </button>
+
+            {/* Step Card-based side-by-side diff viewer */}
+            <div className="diff-container" style={{ flex: 1 }}>
+              
+              {/* Left Column: Old Version */}
+              <div className="diff-column" style={{ display: 'flex', flexDirection: 'column' }}>
+                <div className="diff-column-header">
+                  {oldVersionLabel}
+                </div>
+                <div className="diff-content" style={{ flex: 1, overflowY: 'auto', padding: '1.25rem' }}>
+                  {diffItems.map((item, idx) => {
+                    if (item.type === 'added') {
+                      return <div key={`empty-l-${idx}`} className="diff-step-placeholder" />;
+                    }
+                    const step = item.left!;
+                    const stepClass = item.type === 'removed' ? 'diff-step-card removed' : (item.type === 'modified' ? 'diff-step-card modified-old' : 'diff-step-card');
+                    return (
+                      <div key={`left-${step.id}`} className={stepClass}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 600, fontSize: '0.8rem', opacity: 0.85 }}>
+                          <span>{item.type === 'removed' ? '-' : ' '}</span>
+                          <span>Step {idx + 1}</span>
+                        </div>
+                        <div style={{ fontSize: '0.85rem', lineHeight: '1.4', marginTop: '0.25rem' }}>
+                          {step.action || <span style={{ fontStyle: 'italic', opacity: 0.5 }}>No action text</span>}
+                        </div>
+                        {step.checkType && step.checkType !== 'none' && (
+                          <div style={{ marginTop: '0.5rem' }}>
+                            <span className="sheet-badge sheet-badge-tool" style={{ fontSize: '0.7rem' }}>
+                              {step.checkType === 'checkbox' ? 'Checkbox' : 'Measurement'}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Right Column: Proposed Version */}
+              <div className="diff-column" style={{ display: 'flex', flexDirection: 'column' }}>
+                <div className="diff-column-header" style={{
+                  color: editedInstructionInfo ? 'var(--brand-navy)' : 'var(--color-success)',
+                  borderBottomColor: editedInstructionInfo ? 'var(--border-color)' : 'rgba(16, 185, 129, 0.15)'
+                }}>
+                  {newVersionLabel}
+                </div>
+                <div className="diff-content" style={{ flex: 1, overflowY: 'auto', padding: '1.25rem' }}>
+                  {diffItems.map((item, idx) => {
+                    if (item.type === 'removed') {
+                      return <div key={`empty-r-${idx}`} className="diff-step-placeholder" />;
+                    }
+                    const step = item.right!;
+                    const stepClass = item.type === 'added' ? 'diff-step-card added' : (item.type === 'modified' ? 'diff-step-card modified-new' : 'diff-step-card');
+                    return (
+                      <div key={`right-${step.id}`} className={stepClass}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 600, fontSize: '0.8rem', opacity: 0.85 }}>
+                          <span>{item.type === 'added' ? '+' : ' '}</span>
+                          <span>Step {idx + 1}</span>
+                        </div>
+                        <div style={{ fontSize: '0.85rem', lineHeight: '1.4', marginTop: '0.25rem' }}>
+                          {step.action || <span style={{ fontStyle: 'italic', opacity: 0.5 }}>No action text</span>}
+                        </div>
+                        {step.checkType && step.checkType !== 'none' && (
+                          <div style={{ marginTop: '0.5rem' }}>
+                            <span className="sheet-badge sheet-badge-tool" style={{ fontSize: '0.7rem' }}>
+                              {step.checkType === 'checkbox' ? 'Checkbox' : 'Measurement'}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
             </div>
           </div>
-
-          {/* GitHub-like split diff viewer */}
-          <div className="diff-container" style={{ flex: 1 }}>
-            
-            {/* Left Column: Old Version */}
-            <div className="diff-column">
-              <div className="diff-column-header">
-                Previous Version (v2.4.0)
-              </div>
-              <div className="diff-content">
-                <div className="diff-line">
-                  <span className="diff-line-number">1</span>
-                  <span className="diff-sign"> </span>
-                  <span className="diff-text">Clean the packaging workstation of any debris, dust, or foreign objects.</span>
-                </div>
-                
-                <div className="diff-line">
-                  <span className="diff-line-number">2</span>
-                  <span className="diff-sign"> </span>
-                  <span className="diff-text">Peel the protective backing film from the four self-adhesive foam corners.</span>
-                </div>
-                
-                <div className="diff-line removed">
-                  <span className="diff-line-number">3</span>
-                  <span className="diff-sign">-</span>
-                  <span className="diff-text">Carefully lift the product by the handle straps. Align it with the corner blocks and drop it down quickly to seat.</span>
-                </div>
-                
-                <div className="diff-line empty-placeholder">
-                  <span className="diff-line-number"> </span>
-                  <span className="diff-sign"> </span>
-                  <span className="diff-text" style={{ color: '#cbd5e1' }}> </span>
-                </div>
-                
-                <div className="diff-line">
-                  <span className="diff-line-number">4</span>
-                  <span className="diff-sign"> </span>
-                  <span className="diff-text">Fold the top box flaps shut. Apply two layers of heavy-duty fiber packaging tape across the center seam.</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Right Column: Proposed Version */}
-            <div className="diff-column">
-              <div className="diff-column-header" style={{ color: 'var(--color-success)', borderBottomColor: 'rgba(16, 185, 129, 0.15)' }}>
-                Proposed Version (v2.4.1-rc1)
-              </div>
-              <div className="diff-content">
-                <div className="diff-line">
-                  <span className="diff-line-number">1</span>
-                  <span className="diff-sign"> </span>
-                  <span className="diff-text">Clean the packaging workstation of any debris, dust, or foreign objects.</span>
-                </div>
-                
-                <div className="diff-line">
-                  <span className="diff-line-number">2</span>
-                  <span className="diff-sign"> </span>
-                  <span className="diff-text">Peel the protective backing film from the four self-adhesive foam corners.</span>
-                </div>
-                
-                <div className="diff-line empty-placeholder">
-                  <span className="diff-line-number"> </span>
-                  <span className="diff-sign"> </span>
-                  <span className="diff-text" style={{ color: '#cbd5e1' }}> </span>
-                </div>
-                
-                <div className="diff-line added">
-                  <span className="diff-line-number">3</span>
-                  <span className="diff-sign">+</span>
-                  <span className="diff-text">Carefully hoist the heavy equipment core. Align the base corners with the foam channels and gently lower the unit until it seats flush.</span>
-                </div>
-                
-                <div className="diff-line">
-                  <span className="diff-line-number">4</span>
-                  <span className="diff-sign"> </span>
-                  <span className="diff-text">Fold the top box flaps shut. Apply two layers of heavy-duty fiber packaging tape across the center seam.</span>
-                </div>
-              </div>
-            </div>
-
-          </div>
-        </div>
-      ) : (
+        );
+      })() : (
         /* Standard View (Table or Details split view) */
         <>
           {/* Untagged Bugs Banner & Slideshow */}
@@ -373,7 +478,7 @@ export const BugReports: React.FC = () => {
             <div className="untagged-banner">
               <div className="banner-header">
                 <AlertTriangle size={18} />
-                <span>Classification Required: {totalUntagged} bug{totalUntagged > 1 ? 's lack' : ' lacks'} severity tagging in the dashboard</span>
+                <span>Classification Required: {totalUntagged} bug{totalUntagged > 1 ? 's lack' : ' lacks'} priority tagging in the dashboard</span>
               </div>
 
               <div className="slideshow-card">
@@ -410,12 +515,11 @@ export const BugReports: React.FC = () => {
                 </div>
 
                 <div className="tagging-actions">
-                  <span className="tag-editor-label">Assign Severity Tag:</span>
+                  <span className="tag-editor-label">Assign Priority Tag:</span>
                   <div className="quick-tags">
-                    <button className="quick-tag-btn" onClick={() => handleAssignSeverity(activeSlideBug.id, 'low')}>Low</button>
-                    <button className="quick-tag-btn" onClick={() => handleAssignSeverity(activeSlideBug.id, 'medium')}>Medium</button>
-                    <button className="quick-tag-btn" onClick={() => handleAssignSeverity(activeSlideBug.id, 'high')}>High</button>
-                    <button className="quick-tag-btn" onClick={() => handleAssignSeverity(activeSlideBug.id, 'critical')}>Critical</button>
+                    <button className="quick-tag-btn" onClick={() => handleAssignPriority(activeSlideBug.id, 'low')}>Low</button>
+                    <button className="quick-tag-btn" onClick={() => handleAssignPriority(activeSlideBug.id, 'medium')}>Medium</button>
+                    <button className="quick-tag-btn" onClick={() => handleAssignPriority(activeSlideBug.id, 'high')}>High</button>
                   </div>
                 </div>
               </div>
@@ -441,12 +545,11 @@ export const BugReports: React.FC = () => {
                   <Filter size={14} style={{ color: 'var(--text-secondary)' }} />
                   <select
                     className="select-filter"
-                    value={severityFilter}
-                    onChange={(e) => setSeverityFilter(e.target.value)}
+                    value={priorityFilter}
+                    onChange={(e) => setPriorityFilter(e.target.value)}
                   >
-                    <option value="all">All Severities</option>
+                    <option value="all">All Priorities</option>
                     <option value="unassigned">Untagged</option>
-                    <option value="critical">Critical</option>
                     <option value="high">High</option>
                     <option value="medium">Medium</option>
                     <option value="low">Low</option>
@@ -465,7 +568,7 @@ export const BugReports: React.FC = () => {
                 </select>
 
                 <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', padding: '0 0.5rem', borderLeft: '1px solid var(--border-color)' }}>
-                  Sorted by Severity & Date
+                  Sorted by Priority & Date
                 </div>
               </div>
             </div>
@@ -474,9 +577,22 @@ export const BugReports: React.FC = () => {
           {/* Main Content: Split View or Full-page Table View */}
           {selectedBug ? (
             <div className="split-view-container" style={{ height: 'calc(100vh - 150px)', marginTop: '0' }}>
-              {/* Column 1: Expanded Middle (Instruction editing placeholder) */}
-              <div className="split-middle-empty" style={{ flex: 1 }}>
-                <span>Instruction editing space (TBD)</span>
+              {/* Column 1: Instruction Builder workspace */}
+              <div className="split-middle-editor" style={{ flex: 1, border: '1px solid var(--border-color)', borderRadius: '8px', overflow: 'hidden', position: 'relative', display: 'flex', flexDirection: 'column' }}>
+                {(() => {
+                  const mapping = bugBuilderMapping[selectedBug.id];
+                  return (
+                    <InstructionBuilder
+                      key={selectedBug.id}
+                      embedded={true}
+                      onInstructionChange={setEditedInstructionInfo}
+                      initialProductId={mapping?.productId}
+                      initialConfigurationId={mapping?.configurationId}
+                      initialModuleId={mapping?.moduleId}
+                      initialStepId={mapping?.stepId}
+                    />
+                  );
+                })()}
               </div>
 
               {/* Column 2: Bug Details on Right */}
@@ -486,10 +602,23 @@ export const BugReports: React.FC = () => {
                     <span style={{ color: 'var(--brand-orange)', fontSize: '0.8rem', fontWeight: 600 }}>{selectedBug.id}</span>
                     <h2 style={{ fontSize: '1rem', color: 'var(--brand-navy)', marginTop: '0.15rem', lineHeight: '1.2' }}>{selectedBug.title}</h2>
                   </div>
-                  <X className="modal-close" onClick={() => setSelectedBug(null)} style={{ cursor: 'pointer', flexShrink: 0, marginLeft: '0.5rem' }} />
+                  <X className="modal-close" onClick={() => { setSelectedBug(null); setEditedInstructionInfo(null); }} style={{ cursor: 'pointer', flexShrink: 0, marginLeft: '0.5rem' }} />
                 </div>
 
                 <div className="details-scroll">
+                  {/* Linked Instruction Info Box */}
+                  {editedInstructionInfo && (
+                    <div style={{ backgroundColor: '#fff8f2', border: '1px solid #ffe8d6', borderRadius: '6px', padding: '0.75rem', marginBottom: '1rem' }}>
+                      <div style={{ fontWeight: 600, fontSize: '0.75rem', color: 'var(--brand-orange)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Linked Instruction</div>
+                      <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--brand-navy)', marginTop: '0.15rem' }}>
+                        {editedInstructionInfo.selectedProduct?.name} › {editedInstructionInfo.selectedModule?.name}
+                      </div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.15rem' }}>
+                        {editedInstructionInfo.editedSteps.length} step(s) in draft
+                      </div>
+                    </div>
+                  )}
+
                   <div className="modal-detail-row">
                     <span className="modal-detail-label">Reported By</span>
                     <span className="modal-detail-value">{selectedBug.reportedBy}</span>
@@ -499,18 +628,17 @@ export const BugReports: React.FC = () => {
                     <span className="modal-detail-value">{selectedBug.reportedDate}</span>
                   </div>
                   <div className="modal-detail-row">
-                    <span className="modal-detail-label">Severity</span>
+                    <span className="modal-detail-label">Priority</span>
                     <select 
                       className="select-filter" 
-                      value={selectedBug.severity} 
+                      value={selectedBug.priority} 
                       style={{ padding: '0.25rem 0.5rem', borderRadius: '4px', fontSize: '0.825rem' }}
-                      onChange={(e) => handleAssignSeverity(selectedBug.id, e.target.value as BugReport['severity'])}
+                      onChange={(e) => handleAssignPriority(selectedBug.id, e.target.value as BugReport['priority'])}
                     >
                       <option value="unassigned">Untagged</option>
                       <option value="low">Low</option>
                       <option value="medium">Medium</option>
                       <option value="high">High</option>
-                      <option value="critical">Critical</option>
                     </select>
                   </div>
                   <div className="modal-detail-row">
@@ -532,14 +660,7 @@ export const BugReports: React.FC = () => {
                     <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{selectedBug.description}</p>
                   </div>
 
-                  <div className="modal-steps-box">
-                    <div style={{ fontWeight: 600, fontSize: '0.8rem', color: 'var(--brand-navy)' }}>Steps to Reproduce:</div>
-                    <ol className="modal-steps-list">
-                      {selectedBug.steps.map((step, idx) => (
-                        <li key={idx}>{step}</li>
-                      ))}
-                    </ol>
-                  </div>
+
                 </div>
 
                 <div className="details-footer">
@@ -569,7 +690,7 @@ export const BugReports: React.FC = () => {
                     <tr>
                       <th>ID</th>
                       <th>Issue Summary</th>
-                      <th>Severity</th>
+                      <th>Priority</th>
                       <th>Status</th>
                       <th>Reported By</th>
                       <th>Date</th>
@@ -584,7 +705,7 @@ export const BugReports: React.FC = () => {
                             <div className="bug-summary">{bug.title}</div>
                             <div className="bug-desc-short">{bug.description}</div>
                           </td>
-                          <td>{getSeverityBadge(bug.severity)}</td>
+                          <td>{getPriorityBadge(bug.priority)}</td>
                           <td>{getStatusBadge(bug.status)}</td>
                           <td>{bug.reportedBy}</td>
                           <td style={{ color: 'var(--text-secondary)', fontSize: '0.825rem' }}>{bug.reportedDate}</td>

@@ -250,7 +250,7 @@
 }
 
 /* Indicators (Simple dot next to normal-cased text) */
-.severity-indicator, .status-indicator {
+.priority-indicator, .status-indicator {
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
@@ -259,18 +259,17 @@
   font-weight: 500;
 }
 
-.severity-indicator .dot, .status-indicator .dot {
+.priority-indicator .dot, .status-indicator .dot {
   width: 6px;
   height: 6px;
   border-radius: 50%;
   display: inline-block;
 }
 
-.severity-indicator.critical .dot { background-color: var(--color-danger); }
-.severity-indicator.high .dot { background-color: var(--brand-orange); }
-.severity-indicator.medium .dot { background-color: var(--color-info); }
-.severity-indicator.low .dot { background-color: var(--text-muted); }
-.severity-indicator.unassigned .dot { background-color: #cbd5e1; }
+.priority-indicator.high .dot { background-color: var(--brand-orange); }
+.priority-indicator.medium .dot { background-color: var(--color-info); }
+.priority-indicator.low .dot { background-color: var(--text-muted); }
+.priority-indicator.unassigned .dot { background-color: #cbd5e1; }
 
 .status-indicator.open .dot { background-color: var(--color-danger); }
 .status-indicator.progress .dot { background-color: var(--color-warning); }
@@ -550,4 +549,84 @@
   flex: 1;
   word-break: break-word;
 }
+
+/* Embedded Instruction Builder Layout overrides */
+.split-middle-editor {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.ib-embedded-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  background-color: var(--bg-primary);
+  position: relative;
+}
+
+.ib-embedded-header {
+  display: flex;
+  align-items: center;
+  padding: 0.65rem 0.85rem;
+  border-bottom: 1px solid var(--border-color);
+  background-color: var(--bg-secondary);
+  flex-shrink: 0;
+}
+
+/* Constrain visual editor to the left panel when embedded */
+.ib-embedded-container .visual-editor-view {
+  position: absolute;
+  inset: 0;
+  z-index: 100;
+}
+
+/* Step Card Diff Styles */
+.diff-step-card {
+  padding: 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background-color: var(--bg-secondary);
+  margin-bottom: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-height: 80px;
+}
+
+.diff-step-card.removed {
+  background-color: #fef2f2;
+  border-color: #fca5a5;
+  color: #991b1b;
+}
+
+.diff-step-card.added {
+  background-color: #f0fdf4;
+  border-color: #86efac;
+  color: #166534;
+}
+
+.diff-step-card.modified-old {
+  background-color: #fffbeb;
+  border-color: #fcd34d;
+  color: #92400e;
+}
+
+.diff-step-card.modified-new {
+  background-color: #eff6ff;
+  border-color: #93c5fd;
+  color: #1e40af;
+}
+
+.diff-step-placeholder {
+  min-height: 80px;
+  margin-bottom: 0.75rem;
+  background-color: var(--bg-tertiary);
+  border: 1px dashed var(--border-color);
+  border-radius: 6px;
+  opacity: 0.5;
+}
+
 
