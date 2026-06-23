@@ -271,9 +271,12 @@
 .priority-indicator.low .dot { background-color: var(--text-muted); }
 .priority-indicator.unassigned .dot { background-color: #cbd5e1; }
 
+.status-indicator.untagged .dot { background-color: #94a3b8; }
 .status-indicator.open .dot { background-color: var(--color-danger); }
 .status-indicator.progress .dot { background-color: var(--color-warning); }
-.status-indicator.resolved .dot { background-color: var(--color-success); }
+.status-indicator.fixed-awaiting-approval .dot { background-color: #a855f7; }
+.status-indicator.closed .dot { background-color: var(--color-success); }
+.status-indicator.wont-fix .dot { background-color: #64748b; }
 
 /* Split View Layout (opened when a bug is selected) */
 .split-view-container {
@@ -452,6 +455,7 @@
   gap: 0.85rem;
   z-index: 1100;
   animation: slideInRight 0.3s ease-out forwards;
+  height: fit-content;
 }
 
 .deploy-toast.success-toast {
@@ -632,5 +636,21 @@
   border-radius: 6px;
   opacity: 0.5;
 }
+
+/* Character Diff Highlights */
+.char-diff-removed {
+  background-color: #fee2e2;
+  color: #b91c1c;
+  padding: 0 2px;
+  border-radius: 2px;
+}
+
+.char-diff-added {
+  background-color: #d1fae5;
+  color: #065f46;
+  padding: 0 2px;
+  border-radius: 2px;
+}
+
 
 
