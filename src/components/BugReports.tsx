@@ -9,11 +9,95 @@ interface BugReport {
   title: string;
   description: string;
   priority: 'unassigned' | 'low' | 'medium' | 'high';
-  status: 'open' | 'in-progress' | 'resolved';
+  status: 'untagged' | 'open' | 'in-progress' | 'fixed-awaiting-approval' | 'closed' | 'wont-fix';
   reportedBy: string;
   reportedDate: string;
   steps: string[];
 }
+
+interface CharDiffToken {
+  type: 'added' | 'removed' | 'common';
+  value: string;
+}
+
+function diffChars(oldStr: string, newStr: string): CharDiffToken[] {
+  const m = oldStr.length;
+  const n = newStr.length;
+  const dp: number[][] = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
+  
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      if (oldStr[i - 1] === newStr[j - 1]) {
+        dp[i][j] = dp[i - 1][j - 1] + 1;
+      } else {
+        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
+      }
+    }
+  }
+  
+  const result: CharDiffToken[] = [];
+  let i = m;
+  let j = n;
+  
+  while (i > 0 || j > 0) {
+    if (i > 0 && j > 0 && oldStr[i - 1] === newStr[j - 1]) {
+      result.push({ type: 'common', value: oldStr[i - 1] });
+      i--;
+      j--;
+    } else if (j > 0 && (i === 0 || dp[i][j - 1] >= dp[i - 1][j])) {
+      result.push({ type: 'added', value: newStr[j - 1] });
+      j--;
+    } else {
+      result.push({ type: 'removed', value: oldStr[i - 1] });
+      i--;
+    }
+  }
+  
+  result.reverse();
+  
+  const merged: CharDiffToken[] = [];
+  for (const token of result) {
+    const last = merged[merged.length - 1];
+    if (last && last.type === token.type) {
+      last.value += token.value;
+    } else {
+      merged.push({ ...token });
+    }
+  }
+  
+  return merged;
+}
+
+const renderActionDiff = (oldText: string, newText: string, side: 'left' | 'right') => {
+  const tokens = diffChars(oldText, newText);
+  return (
+    <div style={{ fontSize: '0.85rem', lineHeight: '1.4', marginTop: '0.25rem' }}>
+      {tokens.map((token, tokenIdx) => {
+        if (side === 'left') {
+          if (token.type === 'added') return null;
+          if (token.type === 'removed') {
+            return (
+              <span key={tokenIdx} className="char-diff-removed">
+                {token.value}
+              </span>
+            );
+          }
+          return <span key={tokenIdx}>{token.value}</span>;
+        } else {
+          if (token.type === 'removed') return null;
+          if (token.type === 'added') {
+            return (
+              <span key={tokenIdx} className="char-diff-added">
+                {token.value}
+              </span>
+            );
+          }
+          return <span key={tokenIdx}>{token.value}</span>;
+        }
+      })}
+    </div>
+  );
+};
 
 const initialBugs: BugReport[] = [
   {
@@ -50,7 +134,7 @@ const initialBugs: BugReport[] = [
     title: 'Version tag mismatch on production deployment logs',
     description: 'The deployment logs report version tags as v2.3.9 even after the v2.4.0 rollout was verified.',
     priority: 'unassigned', // Untagged
-    status: 'resolved',
+    status: 'fixed-awaiting-approval',
     reportedBy: 'Charlie Green',
     reportedDate: '2026-06-09',
     steps: [
@@ -92,7 +176,7 @@ const initialBugs: BugReport[] = [
     title: 'Broken image links in user settings page',
     description: 'User avatar thumbnail elements point to relative fallback addresses instead of CDN buckets.',
     priority: 'low',
-    status: 'resolved',
+    status: 'closed',
     reportedBy: 'Emma Stone',
     reportedDate: '2026-06-08',
     steps: [
@@ -218,6 +302,11 @@ export const BugReports: React.FC = () => {
   // Notification Toast State
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'info' } | null>(null);
 
+  // Review Action Panel states
+  const [actionPanelExpanded, setActionPanelExpanded] = useState(true);
+  const [denyReason, setDenyReason] = useState('');
+  const [denyError, setDenyError] = useState(false);
+
   // Untagged Bugs list (where priority is unassigned)
   const untaggedBugs = bugs.filter(b => b.priority === 'unassigned');
   const totalUntagged = untaggedBugs.length;
@@ -291,6 +380,31 @@ export const BugReports: React.FC = () => {
       type: 'success'
     });
     setTimeout(() => setToast(null), 3500);
+    setDenyReason('');
+    setDenyError(false);
+    
+    // Transition status to closed on approval
+    setBugs(prev => prev.map(b => b.id === bugId ? { ...b, status: 'closed' } : b));
+  };
+
+  const handleDenyMerge = (bugId: string) => {
+    if (!denyReason.trim()) {
+      setDenyError(true);
+      return;
+    }
+    setShowReviewPage(null);
+    setSelectedBug(null);
+    setEditedInstructionInfo(null);
+    setToast({
+      message: `Changes for ${bugId} denied: "${denyReason.trim()}"`,
+      type: 'info'
+    });
+    setTimeout(() => setToast(null), 4000);
+    setDenyReason('');
+    setDenyError(false);
+    
+    // Revert status to in-progress on denial
+    setBugs(prev => prev.map(b => b.id === bugId ? { ...b, status: 'in-progress' } : b));
   };
 
   // Filter logic
@@ -332,12 +446,18 @@ export const BugReports: React.FC = () => {
 
   const getStatusBadge = (status: BugReport['status']) => {
     switch (status) {
+      case 'untagged':
+        return <span className="status-indicator untagged"><span className="dot" />Untagged</span>;
       case 'open': 
         return <span className="status-indicator open"><span className="dot" />Open</span>;
       case 'in-progress': 
         return <span className="status-indicator progress"><span className="dot" />In Progress</span>;
-      case 'resolved': 
-        return <span className="status-indicator resolved"><span className="dot" />Resolved</span>;
+      case 'fixed-awaiting-approval':
+        return <span className="status-indicator fixed-awaiting-approval"><span className="dot" />Fixed (Awaiting Approval)</span>;
+      case 'closed': 
+        return <span className="status-indicator closed"><span className="dot" />Closed</span>;
+      case 'wont-fix':
+        return <span className="status-indicator wont-fix"><span className="dot" />Won\'t Fix</span>;
     }
   };
 
@@ -370,7 +490,7 @@ export const BugReports: React.FC = () => {
           : 'Proposed Version (v2.4.1-rc1)';
 
         return (
-          <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 100px)' }}>
+          <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 100px)', position: 'relative' }}>
             <div className="dashboard-header" style={{ marginBottom: '1.25rem' }}>
               <div>
                 <span style={{ color: 'var(--brand-orange)', fontSize: '0.85rem', fontWeight: 600 }}>INSTRUCTION MERGE REQUEST</span>
@@ -380,15 +500,9 @@ export const BugReports: React.FC = () => {
               <div style={{ display: 'flex', gap: '0.75rem' }}>
                 <button 
                   className="btn-secondary" 
-                  onClick={() => setShowReviewPage(null)}
+                  onClick={() => { setShowReviewPage(null); setDenyReason(''); setDenyError(false); }}
                 >
                   Back
-                </button>
-                <button 
-                  className="btn-success" 
-                  onClick={() => handleApproveMerge(showReviewPage.id)}
-                >
-                  Approve & Merge
                 </button>
               </div>
             </div>
@@ -407,19 +521,29 @@ export const BugReports: React.FC = () => {
                       return <div key={`empty-l-${idx}`} className="diff-step-placeholder" />;
                     }
                     const step = item.left!;
-                    const stepClass = item.type === 'removed' ? 'diff-step-card removed' : (item.type === 'modified' ? 'diff-step-card modified-old' : 'diff-step-card');
+                    const stepClass = item.type === 'removed' ? 'diff-step-card removed' : 'diff-step-card';
+                    const isActionModified = item.type === 'modified' && item.left?.action !== item.right?.action;
+                    const isCheckModified = item.type === 'modified' && item.left?.checkType !== item.right?.checkType;
+                    
                     return (
                       <div key={`left-${step.id}`} className={stepClass}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 600, fontSize: '0.8rem', opacity: 0.85 }}>
-                          <span>{item.type === 'removed' ? '-' : ' '}</span>
+                          <span>{(item.type === 'removed' || item.type === 'modified') ? '-' : ' '}</span>
                           <span>Step {idx + 1}</span>
                         </div>
-                        <div style={{ fontSize: '0.85rem', lineHeight: '1.4', marginTop: '0.25rem' }}>
-                          {step.action || <span style={{ fontStyle: 'italic', opacity: 0.5 }}>No action text</span>}
-                        </div>
+                        {isActionModified ? (
+                          renderActionDiff(step.action, item.right!.action, 'left')
+                        ) : (
+                          <div style={{ fontSize: '0.85rem', lineHeight: '1.4', marginTop: '0.25rem' }}>
+                            {step.action || <span style={{ fontStyle: 'italic', opacity: 0.5 }}>No action text</span>}
+                          </div>
+                        )}
                         {step.checkType && step.checkType !== 'none' && (
                           <div style={{ marginTop: '0.5rem' }}>
-                            <span className="sheet-badge sheet-badge-tool" style={{ fontSize: '0.7rem' }}>
+                            <span 
+                              className={`sheet-badge sheet-badge-tool ${isCheckModified ? "diff-highlight-removed" : ""}`}
+                              style={{ fontSize: '0.7rem' }}
+                            >
                               {step.checkType === 'checkbox' ? 'Checkbox' : 'Measurement'}
                             </span>
                           </div>
@@ -444,19 +568,29 @@ export const BugReports: React.FC = () => {
                       return <div key={`empty-r-${idx}`} className="diff-step-placeholder" />;
                     }
                     const step = item.right!;
-                    const stepClass = item.type === 'added' ? 'diff-step-card added' : (item.type === 'modified' ? 'diff-step-card modified-new' : 'diff-step-card');
+                    const stepClass = item.type === 'added' ? 'diff-step-card added' : 'diff-step-card';
+                    const isActionModified = item.type === 'modified' && item.left?.action !== item.right?.action;
+                    const isCheckModified = item.type === 'modified' && item.left?.checkType !== item.right?.checkType;
+                    
                     return (
                       <div key={`right-${step.id}`} className={stepClass}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 600, fontSize: '0.8rem', opacity: 0.85 }}>
-                          <span>{item.type === 'added' ? '+' : ' '}</span>
+                          <span>{(item.type === 'added' || item.type === 'modified') ? '+' : ' '}</span>
                           <span>Step {idx + 1}</span>
                         </div>
-                        <div style={{ fontSize: '0.85rem', lineHeight: '1.4', marginTop: '0.25rem' }}>
-                          {step.action || <span style={{ fontStyle: 'italic', opacity: 0.5 }}>No action text</span>}
-                        </div>
+                        {isActionModified ? (
+                          renderActionDiff(item.left!.action, step.action, 'right')
+                        ) : (
+                          <div style={{ fontSize: '0.85rem', lineHeight: '1.4', marginTop: '0.25rem' }}>
+                            {step.action || <span style={{ fontStyle: 'italic', opacity: 0.5 }}>No action text</span>}
+                          </div>
+                        )}
                         {step.checkType && step.checkType !== 'none' && (
                           <div style={{ marginTop: '0.5rem' }}>
-                            <span className="sheet-badge sheet-badge-tool" style={{ fontSize: '0.7rem' }}>
+                            <span 
+                              className={`sheet-badge sheet-badge-tool ${isCheckModified ? "diff-highlight-added" : ""}`}
+                              style={{ fontSize: '0.7rem' }}
+                            >
                               {step.checkType === 'checkbox' ? 'Checkbox' : 'Measurement'}
                             </span>
                           </div>
@@ -468,6 +602,83 @@ export const BugReports: React.FC = () => {
               </div>
 
             </div>
+
+            {/* Floating Action Panel in Bottom-Right */}
+            <div style={{
+              position: 'absolute',
+              bottom: '0',
+              right: '0',
+              width: actionPanelExpanded ? '350px' : '160px',
+              backgroundColor: 'rgba(255, 255, 255, 0.95)',
+              backdropFilter: 'blur(8px)',
+              border: '1px solid var(--border-color)',
+              borderRadius: '8px',
+              boxShadow: 'var(--shadow-lg)',
+              padding: '0.75rem',
+              zIndex: 1000,
+              transition: 'all 0.2s ease',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '0.5rem',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span style={{ fontWeight: 600, fontSize: '0.85rem', color: 'var(--brand-navy)' }}>Review Actions</span>
+                <button 
+                  className="btn-secondary" 
+                  style={{ padding: '0.2rem 0.5rem', fontSize: '0.7rem', height: '24px' }} 
+                  onClick={() => setActionPanelExpanded(!actionPanelExpanded)}
+                >
+                  {actionPanelExpanded ? 'Minimize' : 'Expand'}
+                </button>
+              </div>
+
+              {actionPanelExpanded && (
+                <>
+                  <div style={{ marginTop: '0.25rem' }}>
+                    <label style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 600, fontSize: '0.75rem', marginBottom: '0.25rem', color: 'var(--text-secondary)' }}>
+                      <span>Reason for denying:</span>
+                      {denyError && <span style={{ color: 'var(--color-danger)', fontWeight: 500 }}>* Required on deny</span>}
+                    </label>
+                    <textarea
+                      className="form-input"
+                      style={{ 
+                        width: '100%', 
+                        minHeight: '60px', 
+                        fontSize: '0.8rem', 
+                        padding: '0.4rem', 
+                        borderRadius: '4px',
+                        border: denyError ? '1px solid var(--color-danger)' : '1px solid var(--border-color)',
+                        resize: 'none'
+                      }}
+                      placeholder="Enter reason..."
+                      value={denyReason}
+                      onChange={(e) => {
+                        setDenyReason(e.target.value);
+                        if (e.target.value.trim()) setDenyError(false);
+                      }}
+                    />
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end', marginTop: '0.25rem' }}>
+                    <button 
+                      className="btn-danger" 
+                      style={{ padding: '0.35rem 0.75rem', fontSize: '0.775rem', backgroundColor: 'var(--color-danger)', color: 'white' }} 
+                      onClick={() => handleDenyMerge(showReviewPage.id)}
+                    >
+                      Deny
+                    </button>
+                    <button 
+                      className="btn-success" 
+                      style={{ padding: '0.35rem 0.75rem', fontSize: '0.775rem' }} 
+                      onClick={() => handleApproveMerge(showReviewPage.id)}
+                    >
+                      Approve
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+
           </div>
         );
       })() : (
@@ -508,7 +719,13 @@ export const BugReports: React.FC = () => {
                 </div>
 
                 <div>
-                  <div className="slideshow-title" style={{ cursor: 'pointer' }} onClick={() => setSelectedBug(activeSlideBug)}>
+                  <div className="slideshow-title" style={{ cursor: 'pointer' }} onClick={() => {
+                    if (activeSlideBug.status === 'fixed-awaiting-approval') {
+                      setShowReviewPage(activeSlideBug);
+                    } else {
+                      setSelectedBug(activeSlideBug);
+                    }
+                  }}>
                     {activeSlideBug.title}
                   </div>
                   <p className="slideshow-desc" style={{ marginTop: '0.25rem' }}>{activeSlideBug.description}</p>
@@ -562,9 +779,12 @@ export const BugReports: React.FC = () => {
                   onChange={(e) => setStatusFilter(e.target.value)}
                 >
                   <option value="all">All Statuses</option>
+                  <option value="untagged">Untagged</option>
                   <option value="open">Open</option>
                   <option value="in-progress">In Progress</option>
-                  <option value="resolved">Resolved</option>
+                  <option value="fixed-awaiting-approval">Fixed (Awaiting Approval)</option>
+                  <option value="closed">Closed</option>
+                  <option value="wont-fix">Won't Fix</option>
                 </select>
 
                 <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', padding: '0 0.5rem', borderLeft: '1px solid var(--border-color)' }}>
@@ -649,9 +869,12 @@ export const BugReports: React.FC = () => {
                       style={{ padding: '0.25rem 0.5rem', borderRadius: '4px', fontSize: '0.825rem' }}
                       onChange={(e) => handleUpdateStatus(selectedBug.id, e.target.value as BugReport['status'])}
                     >
+                      <option value="untagged">Untagged</option>
                       <option value="open">Open</option>
                       <option value="in-progress">In Progress</option>
-                      <option value="resolved">Resolved</option>
+                      <option value="fixed-awaiting-approval">Fixed Awaiting Approval</option>
+                      <option value="closed">Closed</option>
+                      <option value="wont-fix">Won't Fix</option>
                     </select>
                   </div>
 
@@ -699,7 +922,13 @@ export const BugReports: React.FC = () => {
                   <tbody>
                     {sortedBugs.length > 0 ? (
                       sortedBugs.map((bug) => (
-                        <tr key={bug.id} className="bug-row" onClick={() => setSelectedBug(bug)}>
+                        <tr key={bug.id} className="bug-row" onClick={() => {
+                          if (bug.status === 'fixed-awaiting-approval') {
+                            setShowReviewPage(bug);
+                          } else {
+                            setSelectedBug(bug);
+                          }
+                        }}>
                           <td style={{ fontWeight: 600, color: 'var(--brand-orange)' }}>{bug.id}</td>
                           <td>
                             <div className="bug-summary">{bug.title}</div>

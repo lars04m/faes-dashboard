@@ -1698,6 +1698,7 @@
   align-items: center;
   gap: 0.85rem;
   z-index: 1100;
+  height: fit-content;
 }
 
 .spinner {
